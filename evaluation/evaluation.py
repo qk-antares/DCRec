@@ -27,17 +27,20 @@ def eval_edge_prediction(model, data, n_neighbors, negative_sampler: NegativeSam
       timestamps_batch = data.timestamps[s_idx:e_idx]
       edge_idxs_batch = data.edge_idxs[s_idx: e_idx]
 
+      # 生成负样本，现在返回shape为[num_neg, batch_size]
       negatives_batch = negative_sampler.generate_negative_samples(sources_batch, timestamps_batch, num_neg)
-      # TODO: 支持多个负样本
-      negatives_batch = np.array(negatives_batch).flatten()
 
       pos_prob, neg_prob = model.compute_edge_probabilities(sources_batch, destinations_batch,
                                                             negatives_batch, timestamps_batch,
                                                             edge_idxs_batch, n_neighbors)
 
       size = len(sources_batch)
-      pred_score = np.concatenate([(pos_prob).cpu().numpy(), (neg_prob).cpu().numpy()])
-      true_label = np.concatenate([np.ones(size), np.zeros(size)])
+      # pos_prob: [batch_size], neg_prob: [num_neg, batch_size]
+      # 将neg_prob展平为[num_neg * batch_size]
+      neg_prob_flat = neg_prob.view(-1) if neg_prob.dim() > 1 else neg_prob
+      
+      pred_score = np.concatenate([(pos_prob).cpu().numpy(), (neg_prob_flat).cpu().numpy()])
+      true_label = np.concatenate([np.ones(size), np.zeros(size * num_neg)])
 
       val_ap.append(average_precision_score(true_label, pred_score))
       val_auc.append(roc_auc_score(true_label, pred_score))

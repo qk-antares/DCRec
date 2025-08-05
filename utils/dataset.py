@@ -267,18 +267,22 @@ class NegativeSampler:
         self.all_destinations = set(data.destinations)
         self.neighbor_finder = neighbor_finder
 
-    def generate_negative_samples(self, source_nodes, timestamps, num_samples: int = 1):
+    def generate_negative_samples(self, source_nodes, timestamps, n_neg: int = 1):
         """
         对给定的source_nodes和timestamps进行负采样
         Args:
-            source_nodes: 用户节点ID数组
-            timestamps: 时间戳数组
-            num_samples: 每个用户生成的负样本数量
+            source_nodes: 用户节点ID数组 [batch_size]
+            timestamps: 时间戳数组 [batch_size]
+            n_neg: 每个用户生成的负样本数量
         Returns:
-            neg_destinations: 负样本(未交互的物品)数组
+            neg_destinations: 负样本数组，shape为[n_neg, batch_size]
+                             neg_destinations[i]代表对batch中所有source_nodes节点所采样的第i个负样本
         """
-        neg_destinations = []
-        for user_id, timestamp in zip(source_nodes, timestamps):
+        batch_size = len(source_nodes)
+        # 初始化结果矩阵 [n_neg, batch_size]
+        neg_destinations = np.zeros((n_neg, batch_size), dtype=np.int32)
+        
+        for batch_idx, (user_id, timestamp) in enumerate(zip(source_nodes, timestamps)):
             # 获取该用户在timestamp之前交互过的物品
             interacted_items, _, _ = self.neighbor_finder.find_before(user_id, timestamp)
             interacted_set = set(interacted_items)
@@ -286,9 +290,12 @@ class NegativeSampler:
             if not candidate_destinations:
                 # 无法采样负样本，这表明用户在该时间点与所有物品都有过交互，通常是不常见的情况
                 raise ValueError(f"User {user_id} at timestamp {timestamp} has no candidate negative items.")
-            # 如果候选物品不足num_samples，允许有放回采样
-            replace = len(candidate_destinations) < num_samples
-            sampled_items = np.random.choice(candidate_destinations, size=num_samples, replace=replace)
-            neg_destinations.append(sampled_items)
+            # 如果候选物品不足n_neg，允许有放回采样
+            replace = len(candidate_destinations) < n_neg
+            sampled_items = np.random.choice(candidate_destinations, size=n_neg, replace=replace)
+            
+            # 将采样结果填入对应位置：第i个负样本放在neg_destinations[i, batch_idx]
+            for neg_idx in range(n_neg):
+                neg_destinations[neg_idx, batch_idx] = sampled_items[neg_idx]
 
         return neg_destinations

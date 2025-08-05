@@ -5,12 +5,13 @@
             "name": "DCRec Train",
             "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/train_self_supervised.py",
+            "program": "${workspaceFolder}/main.py",
             "console": "integratedTerminal",
             "cwd": "${workspaceFolder}",
             "args": [
                 "--use_memory",
                 "--prefix", "tgn-attn",
+                "--n_neg", "5",
                 "--n_runs", "10"
             ],
             "env": {

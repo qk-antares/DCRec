@@ -46,8 +46,8 @@ class LastMessageAggregator(MessageAggregator):
     for node_id in unique_node_ids:
         if len(messages[node_id]) > 0:
             to_update_node_ids.append(node_id)
-            unique_messages.append(messages[node_id][-1][0])
-            unique_timestamps.append(messages[node_id][-1][1])
+            unique_messages.append(messages[node_id][-1][0])  # Last message
+            unique_timestamps.append(messages[node_id][-1][1])  # Last timestamp
     
     unique_messages = torch.stack(unique_messages) if len(to_update_node_ids) > 0 else []
     unique_timestamps = torch.stack(unique_timestamps) if len(to_update_node_ids) > 0 else []

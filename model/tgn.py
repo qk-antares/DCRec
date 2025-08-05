@@ -105,7 +105,7 @@ class TGN(torch.nn.Module):
 
     source_nodes [batch_size]: source ids.
     :param destination_nodes [batch_size]: destination ids
-    :param negative_nodes [batch_size]: ids of negative sampled destination
+    :param negative_nodes [n_neg, batch_size]: ids of negative sampled destinations
     :param edge_times [batch_size]: timestamp of interaction
     :param edge_idxs [batch_size]: index of interaction
     :param n_neighbors [scalar]: number of temporal neighbor to consider in each convolutional
@@ -114,31 +114,43 @@ class TGN(torch.nn.Module):
     """
 
     n_samples = len(source_nodes)
-    nodes = np.concatenate([source_nodes, destination_nodes, negative_nodes])
+    n_neg = negative_nodes.shape[0] if negative_nodes.ndim == 2 else 1
+    
+    # Flatten negative_nodes from [n_neg, batch_size] to [n_neg * batch_size]
+    if negative_nodes.ndim == 2:
+        negative_nodes_flat = negative_nodes.flatten()
+    else:
+        negative_nodes_flat = negative_nodes
+    
+    nodes = np.concatenate([source_nodes, destination_nodes, negative_nodes_flat])
     positives = np.concatenate([source_nodes, destination_nodes])
-    timestamps = np.concatenate([edge_times, edge_times, edge_times])
+    # Repeat edge_times for sources, destinations, and all negative samples
+    timestamps = np.concatenate([edge_times, edge_times] + [edge_times] * n_neg)
 
     memory = None
     time_diffs = None
     if self.use_memory:
       if self.memory_update_at_start:
         # Update memory for all nodes with messages stored in previous batches
-        memory, last_update = self.get_updated_memory(list(range(self.n_nodes)),
-                                                      self.memory.messages)
+        memory, last_update = self.get_updated_memory(list(range(self.n_nodes)), self.memory.messages)
       else:
         memory = self.memory.get_memory(list(range(self.n_nodes)))
         last_update = self.memory.last_update
 
       ### Compute differences between the time the memory of a node was last updated,
       ### and the time for which we want to compute the embedding of a node
+      ### TODO: 下面这段逻辑可以简化吗？
       source_time_diffs = torch.LongTensor(edge_times).to(self.device) - last_update[
         source_nodes].long()
       source_time_diffs = (source_time_diffs - self.mean_time_shift_src) / self.std_time_shift_src
       destination_time_diffs = torch.LongTensor(edge_times).to(self.device) - last_update[
         destination_nodes].long()
       destination_time_diffs = (destination_time_diffs - self.mean_time_shift_dst) / self.std_time_shift_dst
-      negative_time_diffs = torch.LongTensor(edge_times).to(self.device) - last_update[
-        negative_nodes].long()
+      
+      # Repeat edge_times for each negative sample
+      repeated_edge_times = np.tile(edge_times, n_neg)
+      negative_time_diffs = torch.LongTensor(repeated_edge_times).to(self.device) - last_update[
+        negative_nodes_flat].long()
       negative_time_diffs = (negative_time_diffs - self.mean_time_shift_dst) / self.std_time_shift_dst
 
       time_diffs = torch.cat([source_time_diffs, destination_time_diffs, negative_time_diffs],
@@ -155,6 +167,11 @@ class TGN(torch.nn.Module):
     source_node_embedding = node_embedding[:n_samples]
     destination_node_embedding = node_embedding[n_samples: 2 * n_samples]
     negative_node_embedding = node_embedding[2 * n_samples:]
+    
+    # Reshape negative_node_embedding from [n_neg * batch_size, feat_dim] to [n_neg, batch_size, feat_dim]
+    if negative_nodes.ndim == 2:
+        feat_dim = negative_node_embedding.shape[1]
+        negative_node_embedding = negative_node_embedding.view(n_neg, n_samples, feat_dim)
 
     if self.use_memory:
       if self.memory_update_at_start:
@@ -188,7 +205,10 @@ class TGN(torch.nn.Module):
       if self.dyrep:
         source_node_embedding = memory[source_nodes]
         destination_node_embedding = memory[destination_nodes]
-        negative_node_embedding = memory[negative_nodes]
+        if negative_nodes.ndim == 2:
+            negative_node_embedding = memory[negative_nodes_flat].view(n_neg, n_samples, -1)
+        else:
+            negative_node_embedding = memory[negative_nodes]
 
     return source_node_embedding, destination_node_embedding, negative_node_embedding
 
@@ -199,7 +219,7 @@ class TGN(torch.nn.Module):
     negatives by first computing temporal embeddings using the TGN encoder and then feeding them
     into the MLP decoder.
     :param destination_nodes [batch_size]: destination ids
-    :param negative_nodes [batch_size]: ids of negative sampled destination
+    :param negative_nodes [n_neg, batch_size]: ids of negative sampled destinations
     :param edge_times [batch_size]: timestamp of interaction
     :param edge_idxs [batch_size]: index of interaction
     :param n_neighbors [scalar]: number of temporal neighbor to consider in each convolutional
@@ -207,16 +227,75 @@ class TGN(torch.nn.Module):
     :return: Probabilities for both the positive and negative edges
     """
     n_samples = len(source_nodes)
+    n_neg = negative_nodes.shape[0] if negative_nodes.ndim == 2 else 1
+    
     source_node_embedding, destination_node_embedding, negative_node_embedding = self.compute_temporal_embeddings(
       source_nodes, destination_nodes, negative_nodes, edge_times, edge_idxs, n_neighbors)
 
-    score = self.affinity_score(torch.cat([source_node_embedding, source_node_embedding], dim=0),
-                                torch.cat([destination_node_embedding,
-                                           negative_node_embedding])).squeeze(dim=0)
+    # Prepare embeddings for scoring
+    # Repeat source embeddings (1 + n_neg) times: once for positive, n_neg times for negatives
+    repeated_source_embedding = source_node_embedding.repeat(1 + n_neg, 1)
+    
+    # Flatten negative embeddings from [n_neg, batch_size, feat_dim] to [n_neg * batch_size, feat_dim]
+    if negative_nodes.ndim == 2:
+        negative_node_embedding_flat = negative_node_embedding.view(-1, negative_node_embedding.shape[-1])
+    else:
+        negative_node_embedding_flat = negative_node_embedding
+    
+    # Concatenate destination and negative embeddings
+    target_embeddings = torch.cat([destination_node_embedding, negative_node_embedding_flat], dim=0)
+
+    score = self.affinity_score(repeated_source_embedding, target_embeddings).squeeze(dim=-1)
     pos_score = score[:n_samples]
     neg_score = score[n_samples:]
+    
+    # Reshape neg_score from [n_neg * batch_size] to [n_neg, batch_size]
+    if negative_nodes.ndim == 2:
+        neg_score = neg_score.view(n_neg, n_samples)
 
     return pos_score.sigmoid(), neg_score.sigmoid()
+
+  def compute_edge_scores(self, source_nodes, destination_nodes, negative_nodes, edge_times,
+                         edge_idxs, n_neighbors=20):
+    """
+    Compute raw scores (logits) for edges between sources and destination and between sources and
+    negatives. This is used for BPR loss computation.
+    :param destination_nodes [batch_size]: destination ids
+    :param negative_nodes [n_neg, batch_size]: ids of negative sampled destinations
+    :param edge_times [batch_size]: timestamp of interaction
+    :param edge_idxs [batch_size]: index of interaction
+    :param n_neighbors [scalar]: number of temporal neighbor to consider in each convolutional
+    layer
+    :return: Raw scores for both the positive and negative edges
+    """
+    n_samples = len(source_nodes)
+    n_neg = negative_nodes.shape[0] if negative_nodes.ndim == 2 else 1
+    
+    source_node_embedding, destination_node_embedding, negative_node_embedding = self.compute_temporal_embeddings(
+      source_nodes, destination_nodes, negative_nodes, edge_times, edge_idxs, n_neighbors)
+
+    # Prepare embeddings for scoring
+    # Repeat source embeddings (1 + n_neg) times: once for positive, n_neg times for negatives
+    repeated_source_embedding = source_node_embedding.repeat(1 + n_neg, 1)
+    
+    # Flatten negative embeddings from [n_neg, batch_size, feat_dim] to [n_neg * batch_size, feat_dim]
+    if negative_nodes.ndim == 2:
+        negative_node_embedding_flat = negative_node_embedding.view(-1, negative_node_embedding.shape[-1])
+    else:
+        negative_node_embedding_flat = negative_node_embedding
+    
+    # Concatenate destination and negative embeddings
+    target_embeddings = torch.cat([destination_node_embedding, negative_node_embedding_flat], dim=0)
+
+    score = self.affinity_score(repeated_source_embedding, target_embeddings).squeeze(dim=-1)
+    pos_score = score[:n_samples]
+    neg_score = score[n_samples:]
+    
+    # Reshape neg_score from [n_neg * batch_size] to [n_neg, batch_size]
+    if negative_nodes.ndim == 2:
+        neg_score = neg_score.view(n_neg, n_samples)
+
+    return pos_score, neg_score
 
   def update_memory(self, nodes, messages):
     # Aggregate messages for the same nodes
