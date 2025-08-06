@@ -2,4 +2,4 @@ data
 results
 saved_checkpoints
 saved_models
-__pycache__
+**/__pycache__/
