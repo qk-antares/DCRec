@@ -18,6 +18,7 @@ def parse_arguments():
     parser.add_argument('--prefix', type=str, default='', help='Prefix to name the checkpoints')
     parser.add_argument('--n_neighbors', type=int, default=10, help='Number of neighbors to sample')
     parser.add_argument('--n_neg', type=int, default=1, help='Number of negative samples to generate')
+    parser.add_argument('--n_test_neg', type=int, default=1000, help='Number of negative samples to generate when evaluating')
     parser.add_argument('--lr', type=float, default=0.0001, help='Learning rate')
     parser.add_argument('--patience', type=int, default=5, help='Patience for early stopping')
     parser.add_argument('--n_runs', type=int, default=1, help='Number of runs')

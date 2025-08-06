@@ -131,43 +131,43 @@ class TGNTrainer:
             train_memory_backup = model.memory.backup_memory()
         
         # 验证已见节点
-        val_ap, val_auc = eval_edge_prediction(
+        val_mrr, val_recall_10, val_recall_20 = eval_edge_prediction(
             model, self.dataset.val_data, self.args.n_neighbors, 
-            self.dataset.full_negative_sampler, self.args.n_neg, self.args.batch_size)
-        
+            self.dataset.full_negative_sampler, self.args.n_test_neg, self.args.batch_size)
+
         val_memory_backup = None
         if self.args.use_memory:
             val_memory_backup = model.memory.backup_memory()
             model.memory.restore_memory(train_memory_backup)
         
         # 验证未见节点
-        nn_val_ap, nn_val_auc = eval_edge_prediction(
+        nn_val_mrr, nn_val_recall_10, nn_val_recall_20 = eval_edge_prediction(
             model, self.dataset.new_node_val_data, self.args.n_neighbors,
-            self.dataset.full_negative_sampler, self.args.n_neg, self.args.batch_size)
+            self.dataset.full_negative_sampler, self.args.n_test_neg, self.args.batch_size)
         
         if self.args.use_memory:
             model.memory.restore_memory(val_memory_backup)
         
-        return val_ap, val_auc, nn_val_ap, nn_val_auc, val_memory_backup
+        return val_mrr, val_recall_10, val_recall_20, nn_val_mrr, nn_val_recall_10, nn_val_recall_20, val_memory_backup
     
     def test(self, model, val_memory_backup=None):
         """测试模型"""
         model.set_neighbor_finder(self.dataset.full_ngh_finder)
         
         # 测试已见节点
-        test_ap, test_auc = eval_edge_prediction(
+        test_mrr, test_recall_10, test_recall_20 = eval_edge_prediction(
             model, self.dataset.test_data, self.args.n_neighbors,
-            self.dataset.full_negative_sampler, self.args.n_neg, self.args.batch_size)
+            self.dataset.full_negative_sampler, self.args.n_test_neg, self.args.batch_size)
         
         if self.args.use_memory and val_memory_backup is not None:
             model.memory.restore_memory(val_memory_backup)
         
         # 测试未见节点
-        nn_test_ap, nn_test_auc = eval_edge_prediction(
+        nn_test_mrr, nn_test_recall_10, nn_test_recall_20 = eval_edge_prediction(
             model, self.dataset.new_node_test_data, self.args.n_neighbors,
-            self.dataset.full_negative_sampler, self.args.n_neg, self.args.batch_size)
+            self.dataset.full_negative_sampler, self.args.n_test_neg, self.args.batch_size)
         
-        return test_ap, test_auc, nn_test_ap, nn_test_auc
+        return test_mrr, test_recall_10, test_recall_20, nn_test_mrr, nn_test_recall_10, nn_test_recall_20
     
     def train_model(self):
         """完整的模型训练流程"""
@@ -175,8 +175,12 @@ class TGNTrainer:
         optimizer = torch.optim.Adam(model.parameters(), lr=self.args.lr)
         
         # 训练统计
-        val_aps = []
-        new_nodes_val_aps = []
+        val_mrrs = []
+        val_recall_10s = []
+        val_recall_20s = []
+        new_nodes_val_mrrs = []
+        new_nodes_val_recall_10s = []
+        new_nodes_val_recall_20s = []
         train_losses = []
         epoch_times = []
         total_epoch_times = []
@@ -200,9 +204,13 @@ class TGNTrainer:
             epoch_times.append(epoch_time)
             
             # 验证
-            val_ap, val_auc, nn_val_ap, nn_val_auc, val_memory_backup = self.validate(model)
-            val_aps.append(val_ap)
-            new_nodes_val_aps.append(nn_val_ap)
+            val_mrr, val_recall_10, val_recall_20, nn_val_mrr, nn_val_recall_10, nn_val_recall_20, val_memory_backup = self.validate(model)
+            val_mrrs.append(val_mrr)
+            val_recall_10s.append(val_recall_10)
+            val_recall_20s.append(val_recall_20)
+            new_nodes_val_mrrs.append(nn_val_mrr)
+            new_nodes_val_recall_10s.append(nn_val_recall_10)
+            new_nodes_val_recall_20s.append(nn_val_recall_20)
             
             total_epoch_time = time.time() - start_epoch
             total_epoch_times.append(total_epoch_time)
@@ -210,11 +218,11 @@ class TGNTrainer:
             # 记录日志
             self.logger.info('epoch: {} took {:.2f}s'.format(epoch, total_epoch_time))
             self.logger.info('Epoch mean loss: {}'.format(train_loss))
-            self.logger.info('val auc: {}, new node val auc: {}'.format(val_auc, nn_val_auc))
-            self.logger.info('val ap: {}, new node val ap: {}'.format(val_ap, nn_val_ap))
+            self.logger.info('val MRR: {:.4f}, Recall@10: {:.4f}, Recall@20: {:.4f}'.format(val_mrr, val_recall_10, val_recall_20))
+            self.logger.info('new node val MRR: {:.4f}, Recall@10: {:.4f}, Recall@20: {:.4f}'.format(nn_val_mrr, nn_val_recall_10, nn_val_recall_20))
             
-            # 早停检查
-            if early_stopper.early_stop_check(val_ap):
+            # 早停检查（使用MRR作为主要指标）
+            if early_stopper.early_stop_check(val_mrr):
                 self.logger.info('No improvement over {} epochs, stop training'.format(
                     early_stopper.max_round))
                 self.logger.info(f'Loading the best model at epoch {early_stopper.best_epoch}')
@@ -231,10 +239,10 @@ class TGNTrainer:
             val_memory_backup = model.memory.backup_memory()
         
         # 测试
-        test_ap, test_auc, nn_test_ap, nn_test_auc = self.test(model, val_memory_backup)
+        test_mrr, test_recall_10, test_recall_20, nn_test_mrr, nn_test_recall_10, nn_test_recall_20 = self.test(model, val_memory_backup)
         
-        self.logger.info('Test statistics: Old nodes -- auc: {}, ap: {}'.format(test_auc, test_ap))
-        self.logger.info('Test statistics: New nodes -- auc: {}, ap: {}'.format(nn_test_auc, nn_test_ap))
+        self.logger.info('Test statistics: Old nodes -- MRR: {:.4f}, Recall@10: {:.4f}, Recall@20: {:.4f}'.format(test_mrr, test_recall_10, test_recall_20))
+        self.logger.info('Test statistics: New nodes -- MRR: {:.4f}, Recall@10: {:.4f}, Recall@20: {:.4f}'.format(nn_test_mrr, nn_test_recall_10, nn_test_recall_20))
         
         # 保存模型
         self.logger.info('Saving TGN model')
@@ -244,12 +252,18 @@ class TGNTrainer:
         self.logger.info('TGN model saved')
         
         return {
-            "val_aps": val_aps,
-            "new_nodes_val_aps": new_nodes_val_aps,
-            "test_ap": test_ap,
-            "new_node_test_ap": nn_test_ap,
-            "test_auc": test_auc,
-            "new_node_test_auc": nn_test_auc,
+            "val_mrrs": val_mrrs,
+            "val_recall_10s": val_recall_10s,
+            "val_recall_20s": val_recall_20s,
+            "new_nodes_val_mrrs": new_nodes_val_mrrs,
+            "new_nodes_val_recall_10s": new_nodes_val_recall_10s,
+            "new_nodes_val_recall_20s": new_nodes_val_recall_20s,
+            "test_mrr": test_mrr,
+            "test_recall_10": test_recall_10,
+            "test_recall_20": test_recall_20,
+            "new_node_test_mrr": nn_test_mrr,
+            "new_node_test_recall_10": nn_test_recall_10,
+            "new_node_test_recall_20": nn_test_recall_20,
             "epoch_times": epoch_times,
             "train_losses": train_losses,
             "total_epoch_times": total_epoch_times

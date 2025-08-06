@@ -2,13 +2,12 @@ import math
 
 import numpy as np
 import torch
-from sklearn.metrics import average_precision_score, roc_auc_score
 
 from utils.dataset import NegativeSampler
 
 
-def eval_edge_prediction(model, data, n_neighbors, negative_sampler: NegativeSampler, num_neg, batch_size=256):
-  val_ap, val_auc = [], []
+def eval_edge_prediction(model, data, n_neighbors, negative_sampler: NegativeSampler, n_test_neg, batch_size=256):
+  mrr_list, recall_10_list, recall_20_list = [], [], []
   with torch.no_grad():
     model = model.eval()
     # While usually the test batch size is as big as it fits in memory, here we keep it the same
@@ -27,23 +26,36 @@ def eval_edge_prediction(model, data, n_neighbors, negative_sampler: NegativeSam
       timestamps_batch = data.timestamps[s_idx:e_idx]
       edge_idxs_batch = data.edge_idxs[s_idx: e_idx]
 
-      # 生成负样本，现在返回shape为[num_neg, batch_size]
-      negatives_batch = negative_sampler.generate_negative_samples(sources_batch, timestamps_batch, num_neg)
+      # 生成负样本，现在返回shape为[n_test_neg, batch_size]
+      negatives_batch = negative_sampler.generate_negative_samples(sources_batch, timestamps_batch, n_test_neg)
 
-      pos_prob, neg_prob = model.compute_edge_probabilities(sources_batch, destinations_batch,
-                                                            negatives_batch, timestamps_batch,
-                                                            edge_idxs_batch, n_neighbors)
+      # 计算正样本和负样本的原始分数（用于计算MRR,Recall@10，@Recall@20）
+      pos_scores, neg_scores = model.compute_edge_scores(sources_batch, destinations_batch, negatives_batch, 
+                                                         timestamps_batch, edge_idxs_batch, n_neighbors)
 
+      # 计算每个用户的MRR和Recall
       size = len(sources_batch)
-      # pos_prob: [batch_size], neg_prob: [num_neg, batch_size]
-      # 将neg_prob展平为[num_neg * batch_size]
-      neg_prob_flat = neg_prob.view(-1) if neg_prob.dim() > 1 else neg_prob
-      
-      pred_score = np.concatenate([(pos_prob).cpu().numpy(), (neg_prob_flat).cpu().numpy()])
-      true_label = np.concatenate([np.ones(size), np.zeros(size * num_neg)])
+      for i in range(size):
+        # 对于每个用户，获取正样本分数和所有负样本分数
+        pos_score = pos_scores[i].item()  # 正样本分数：标量
+        neg_scores_user = neg_scores[:, i].cpu().numpy()  # 该用户的所有负样本分数：[n_test_neg]
+        
+        # 构建候选列表：正样本 + 负样本
+        all_scores = np.concatenate([[pos_score], neg_scores_user])  # [1 + n_test_neg]
+        
+        # 按分数从高到低排序，获取排名（rank从1开始）
+        sorted_indices = np.argsort(all_scores)[::-1]  # 降序排列的索引
+        pos_rank = np.where(sorted_indices == 0)[0][0] + 1  # 正样本的排名（索引0对应正样本）
+        
+        # 计算MRR
+        mrr = 1.0 / pos_rank
+        mrr_list.append(mrr)
+        
+        # 计算Recall@10和Recall@20
+        recall_10 = 1.0 if pos_rank <= 10 else 0.0
+        recall_20 = 1.0 if pos_rank <= 20 else 0.0
+        recall_10_list.append(recall_10)
+        recall_20_list.append(recall_20)
 
-      val_ap.append(average_precision_score(true_label, pred_score))
-      val_auc.append(roc_auc_score(true_label, pred_score))
-
-  return np.mean(val_ap), np.mean(val_auc)
+  return np.mean(mrr_list), np.mean(recall_10_list), np.mean(recall_20_list)
 
