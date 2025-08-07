@@ -222,17 +222,18 @@ class TGNTrainer:
             self.logger.info('new node val MRR: {:.4f}, Recall@10: {:.4f}, Recall@20: {:.4f}'.format(nn_val_mrr, nn_val_recall_10, nn_val_recall_20))
             
             # 早停检查（使用MRR作为主要指标）
+            get_checkpoint_path = lambda epoch: f'./saved_checkpoints/{self.args.prefix}-{self.args.data}-{epoch}.pth'
             if early_stopper.early_stop_check(val_mrr):
                 self.logger.info('No improvement over {} epochs, stop training'.format(
                     early_stopper.max_round))
                 self.logger.info(f'Loading the best model at epoch {early_stopper.best_epoch}')
-                best_model_path = self.args.get_checkpoint_path(early_stopper.best_epoch)
+                best_model_path = get_checkpoint_path(early_stopper.best_epoch)
                 model.load_state_dict(torch.load(best_model_path))
                 self.logger.info(f'Loaded the best model at epoch {early_stopper.best_epoch} for inference')
                 model.eval()
                 break
             else:
-                torch.save(model.state_dict(), self.args.get_checkpoint_path(epoch))
+                torch.save(model.state_dict(), get_checkpoint_path(epoch))
         
         # 获取验证结束时的内存状态
         if self.args.use_memory:

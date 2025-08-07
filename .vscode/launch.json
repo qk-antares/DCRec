@@ -11,8 +11,8 @@
             "args": [
                 "--use_memory",
                 "--prefix", "tgn-attn",
-                "--n_neg", "5",
-                "--n_runs", "10"
+                "--n_neg", "10",
+                "--n_runs", "1"
             ],
             "env": {
                 "PYTHONPATH": "${workspaceFolder}"

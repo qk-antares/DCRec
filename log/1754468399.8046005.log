@@ -1,5 +1,0 @@
-2025-08-06 16:19:59,804 - root - INFO - Namespace(aggregator='last', batch_size=256, data='ml-1m', drop_out=0.1, dyrep=False, embedding_module='graph_attention', gpu=0, lr=0.0001, memory_dim=129, memory_update_at_end=False, memory_updater='gru', message_dim=100, message_function='identity', n_epoch=50, n_heads=2, n_layers=1, n_neg=5, n_neighbors=10, n_runs=10, n_test_neg=1000, node_dim=128, patience=5, prefix='tgn-attn', randomize_features=False, time_dim=128, train_ratio=0.8, uniform=False, use_destination_embedding_in_message=False, use_memory=True, use_source_embedding_in_message=False, valid_ratio=0.1)
-2025-08-06 16:20:01,954 - root - INFO - Using device: cpu
-2025-08-06 16:20:01,954 - root - INFO - Starting run 1/10
-2025-08-06 16:20:02,373 - root - INFO - num of training instances: 353986
-2025-08-06 16:20:02,373 - root - INFO - num of batches per epoch: 1383

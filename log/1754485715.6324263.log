@@ -1,0 +1,50 @@
+2025-08-06 21:08:35,632 - root - INFO - Namespace(aggregator='last', batch_size=256, data='ml-1m', drop_out=0.1, dyrep=False, embedding_module='graph_attention', gpu=0, inductive=False, lr=0.0001, memory_dim=129, memory_update_at_end=False, memory_updater='gru', message_dim=100, message_function='identity', n_epoch=50, n_heads=2, n_layers=1, n_neg=10, n_neighbors=10, n_runs=1, n_test_neg=1000, node_dim=128, patience=5, prefix='tgn-attn', randomize_features=False, time_dim=128, train_ratio=0.8, uniform=False, use_destination_embedding_in_message=False, use_memory=True, use_source_embedding_in_message=False, valid_ratio=0.1)
+2025-08-06 21:08:37,639 - root - INFO - Using device: cpu
+2025-08-06 21:08:37,640 - root - INFO - Starting run 1/1
+2025-08-06 21:08:38,034 - root - INFO - num of training instances: 460226
+2025-08-06 21:08:38,034 - root - INFO - num of batches per epoch: 1798
+2025-08-06 22:19:08,488 - root - INFO - epoch: 0 took 4230.45s
+2025-08-06 22:19:08,488 - root - INFO - Epoch mean loss: 0.346582608324402
+2025-08-06 22:19:08,488 - root - INFO - val MRR: 0.0402, Recall@10: 0.0763, Recall@20: 0.1271
+2025-08-06 23:29:07,599 - root - INFO - epoch: 1 took 4199.10s
+2025-08-06 23:29:07,599 - root - INFO - Epoch mean loss: 0.2952466606016419
+2025-08-06 23:29:07,599 - root - INFO - val MRR: 0.0651, Recall@10: 0.1436, Recall@20: 0.2364
+2025-08-07 00:39:33,635 - root - INFO - epoch: 2 took 4226.03s
+2025-08-07 00:39:33,635 - root - INFO - Epoch mean loss: 0.2562600088795778
+2025-08-07 00:39:33,635 - root - INFO - val MRR: 0.0750, Recall@10: 0.1648, Recall@20: 0.2729
+2025-08-07 01:49:57,450 - root - INFO - epoch: 3 took 4223.81s
+2025-08-07 01:49:57,450 - root - INFO - Epoch mean loss: 0.23753854717740228
+2025-08-07 01:49:57,450 - root - INFO - val MRR: 0.0819, Recall@10: 0.1775, Recall@20: 0.2939
+2025-08-07 03:00:04,249 - root - INFO - epoch: 4 took 4206.79s
+2025-08-07 03:00:04,249 - root - INFO - Epoch mean loss: 0.22623777470745154
+2025-08-07 03:00:04,249 - root - INFO - val MRR: 0.0912, Recall@10: 0.2008, Recall@20: 0.3194
+2025-08-07 04:10:18,790 - root - INFO - epoch: 5 took 4214.53s
+2025-08-07 04:10:18,790 - root - INFO - Epoch mean loss: 0.21466991893358703
+2025-08-07 04:10:18,790 - root - INFO - val MRR: 0.0933, Recall@10: 0.2078, Recall@20: 0.3275
+2025-08-07 05:20:22,411 - root - INFO - epoch: 6 took 4203.61s
+2025-08-07 05:20:22,411 - root - INFO - Epoch mean loss: 0.20312844670985777
+2025-08-07 05:20:22,411 - root - INFO - val MRR: 0.1029, Recall@10: 0.2331, Recall@20: 0.3638
+2025-08-07 06:30:19,158 - root - INFO - epoch: 7 took 4196.74s
+2025-08-07 06:30:19,158 - root - INFO - Epoch mean loss: 0.19665398082392366
+2025-08-07 06:30:19,158 - root - INFO - val MRR: 0.1108, Recall@10: 0.2521, Recall@20: 0.3880
+2025-08-07 07:40:30,605 - root - INFO - epoch: 8 took 4211.44s
+2025-08-07 07:40:30,605 - root - INFO - Epoch mean loss: 0.19114996385537875
+2025-08-07 07:40:30,605 - root - INFO - val MRR: 0.1116, Recall@10: 0.2567, Recall@20: 0.3945
+2025-08-07 08:50:43,190 - root - INFO - epoch: 9 took 4212.58s
+2025-08-07 08:50:43,190 - root - INFO - Epoch mean loss: 0.1868933600200562
+2025-08-07 08:50:43,190 - root - INFO - val MRR: 0.1157, Recall@10: 0.2636, Recall@20: 0.3998
+2025-08-07 10:01:58,160 - root - INFO - epoch: 10 took 4274.96s
+2025-08-07 10:01:58,160 - root - INFO - Epoch mean loss: 0.18389141165109577
+2025-08-07 10:01:58,160 - root - INFO - val MRR: 0.1128, Recall@10: 0.2537, Recall@20: 0.3897
+2025-08-07 11:14:19,148 - root - INFO - epoch: 11 took 4340.98s
+2025-08-07 11:14:19,148 - root - INFO - Epoch mean loss: 0.17959062309647694
+2025-08-07 11:14:19,148 - root - INFO - val MRR: 0.1222, Recall@10: 0.2774, Recall@20: 0.4179
+2025-08-07 12:25:23,622 - root - INFO - epoch: 12 took 4264.46s
+2025-08-07 12:25:23,622 - root - INFO - Epoch mean loss: 0.17622773737146274
+2025-08-07 12:25:23,622 - root - INFO - val MRR: 0.1269, Recall@10: 0.2929, Recall@20: 0.4324
+2025-08-07 13:36:31,239 - root - INFO - epoch: 13 took 4267.61s
+2025-08-07 13:36:31,239 - root - INFO - Epoch mean loss: 0.17303711546790082
+2025-08-07 13:36:31,239 - root - INFO - val MRR: 0.1282, Recall@10: 0.2901, Recall@20: 0.4315
+2025-08-07 14:47:38,084 - root - INFO - epoch: 14 took 4266.84s
+2025-08-07 14:47:38,084 - root - INFO - Epoch mean loss: 0.17130702092116482
+2025-08-07 14:47:38,085 - root - INFO - val MRR: 0.1310, Recall@10: 0.2959, Recall@20: 0.4374

@@ -2,6 +2,7 @@ import math
 
 import numpy as np
 import torch
+from tqdm import tqdm
 
 from utils.dataset import NegativeSampler
 
@@ -18,7 +19,10 @@ def eval_edge_prediction(model, data, n_neighbors, negative_sampler: NegativeSam
     num_test_instance = len(data.sources)
     num_test_batch = math.ceil(num_test_instance / TEST_BATCH_SIZE)
 
-    for k in range(num_test_batch):
+    # 添加进度条
+    progress_bar = tqdm(range(num_test_batch), desc='Evaluating', unit='batch')
+    
+    for k in progress_bar:
       s_idx = k * TEST_BATCH_SIZE
       e_idx = min(num_test_instance, s_idx + TEST_BATCH_SIZE)
       sources_batch = data.sources[s_idx:e_idx]
@@ -56,6 +60,17 @@ def eval_edge_prediction(model, data, n_neighbors, negative_sampler: NegativeSam
         recall_20 = 1.0 if pos_rank <= 20 else 0.0
         recall_10_list.append(recall_10)
         recall_20_list.append(recall_20)
+      
+      # 更新进度条显示当前的评估指标
+      if len(mrr_list) > 0:
+        current_mrr = np.mean(mrr_list)
+        current_recall_10 = np.mean(recall_10_list)
+        current_recall_20 = np.mean(recall_20_list)
+        progress_bar.set_postfix({
+          'MRR': f'{current_mrr:.4f}',
+          'R@10': f'{current_recall_10:.4f}',
+          'R@20': f'{current_recall_20:.4f}'
+        })
 
   return np.mean(mrr_list), np.mean(recall_10_list), np.mean(recall_20_list)
 

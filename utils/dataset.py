@@ -13,10 +13,12 @@ class Data:
     self.n_interactions = len(sources)
     self.unique_nodes = set(sources) | set(destinations)
     self.n_unique_nodes = len(self.unique_nodes)
+    self.n_unique_sources = len(set(sources))
+    self.n_unique_destinations = len(set(destinations))
 
 # 整个数据集，包含多个Data对象，提供访问和处理数据的功能
 class Dataset:
-    def __init__(self, dataset_name, randomize_features=False, train_ratio=0.8, val_ratio=0.1, uniform=False):
+    def __init__(self, dataset_name, randomize_features=False, train_ratio=0.8, val_ratio=0.1, inductive=False, uniform=False):
         """
         初始化数据集
         :param dataset_name: 数据集名称
@@ -37,9 +39,7 @@ class Dataset:
         self.train_data = None
         self.val_data = None
         self.test_data = None
-        self.new_node_val_data = None
-        self.new_node_test_data = None
-        self.split_data(train_ratio, val_ratio)
+        self.split_data(train_ratio, val_ratio, inductive)
 
         # Initialize training neighbor finder to retrieve temporal graph
         self.train_ngh_finder = NeighborFinder(self.train_data, uniform)
@@ -65,10 +65,8 @@ class Dataset:
         if randomize_features:
             self.node_features = np.random.rand(self.node_features.shape[0], self.node_features.shape[1])
 
-    def split_data(self, train_ratio, val_ratio):
-        print(f"Splitting data into train, validation, and test sets with ratios {train_ratio}, {val_ratio}...")
-
-        val_time, test_time = list(np.quantile(self.graph_df.ts, [train_ratio, train_ratio + val_ratio]))
+    def split_data(self, train_ratio, val_ratio, inductive=False):
+        print(f"Splitting data into train, val, and test sets with ratios {train_ratio}, {val_ratio}...")
 
         # 1. 构造全体数据
         sources = self.graph_df.u.values
@@ -79,68 +77,69 @@ class Dataset:
 
         self.full_data = Data(sources, destinations, timestamps, edge_idxs, labels)
 
+        val_time, test_time = list(np.quantile(self.graph_df.ts, [train_ratio, train_ratio + val_ratio]))
 
-        # 2. 构造训练集
-        node_set = set(sources) | set(destinations)
-        n_total_unique_nodes = len(node_set)
+        if not inductive:
+          # 2. 构造完整的训练集、验证集和测试集
+          train_mask = timestamps <= val_time
+          val_mask = np.logical_and(timestamps <= test_time, timestamps > val_time)
+          test_mask = timestamps > test_time
 
-        # 2.1 验证集和测试集的节点
-        test_node_set = set(sources[timestamps > val_time]).union(set(destinations[timestamps > val_time]))
-        # 2.2 从中抽取10%的节点作为new_test_node_set，并从训练集中删除，来测试模型的归纳能力
-        new_test_node_set = set(np.random.choice(list(test_node_set), int(0.1 * n_total_unique_nodes), replace=False))
+          # train validation and test with all edges
+          self.train_data = Data(sources[train_mask], destinations[train_mask], timestamps[train_mask],
+                          edge_idxs[train_mask], labels[train_mask])
+          self.val_data = Data(sources[val_mask], destinations[val_mask], timestamps[val_mask],
+                          edge_idxs[val_mask], labels[val_mask])
+          self.test_data = Data(sources[test_mask], destinations[test_mask], timestamps[test_mask],
+                          edge_idxs[test_mask], labels[test_mask])
+        else:
+          # 3. 构造训练集（屏蔽了验证机和测试集的节点）
+          node_set = set(sources) | set(destinations)
+          n_total_unique_nodes = len(node_set)
 
-        # 2.3 训练集的src和dst不包含new_test_node_set中的节点
-        # Mask saying for each source and destination whether they are new test nodes
-        new_test_source_mask = self.graph_df.u.map(lambda x: x in new_test_node_set).values
-        new_test_destination_mask = self.graph_df.i.map(lambda x: x in new_test_node_set).values
-        # Mask which is true for edges with both destination and source not being new test nodes (because we want to remove all edges involving any new test node)
-        observed_edges_mask = np.logical_and(~new_test_source_mask, ~new_test_destination_mask)
+          # 3.1 验证集和测试集的节点
+          test_node_set = set(sources[timestamps > val_time]).union(set(destinations[timestamps > val_time]))
+          # 3.2 从中抽取10%的节点作为new_test_node_set，并从训练集中删除，来测试模型的归纳能力
+          new_test_node_set = set(np.random.choice(list(test_node_set), int(0.1 * n_total_unique_nodes), replace=False))
 
-        # For train we keep edges happening before the validation time which do not involve any new node used for inductiveness
-        train_mask = np.logical_and(timestamps <= val_time, observed_edges_mask)
+          # 3.3 训练集的src和dst不包含new_test_node_set中的节点
+          # Mask saying for each source and destination whether they are new test nodes
+          new_test_source_mask = self.graph_df.u.map(lambda x: x in new_test_node_set).values
+          new_test_destination_mask = self.graph_df.i.map(lambda x: x in new_test_node_set).values
+          # Mask which is true for edges with both destination and source not being new test nodes (because we want to remove all edges involving any new test node)
+          observed_edges_mask = np.logical_and(~new_test_source_mask, ~new_test_destination_mask)
 
-        self.train_data = Data(sources[train_mask], destinations[train_mask], timestamps[train_mask],
-                            edge_idxs[train_mask], labels[train_mask])
+          # For train we keep edges happening before the validation time which do not involve any new node used for inductiveness
+          train_mask = np.logical_and(timestamps <= val_time, observed_edges_mask)
 
+          self.train_data = Data(sources[train_mask], destinations[train_mask], timestamps[train_mask],
+                              edge_idxs[train_mask], labels[train_mask])
 
-        # 3. 构造完整的验证集和测试集
-        val_mask = np.logical_and(timestamps <= test_time, timestamps > val_time)
-        test_mask = timestamps > test_time
+          # 4. 构造用于inductive测试的新节点验证集和测试集
+          # 4.1 构造new_node_set（所有节点 - 训练集的节点）
+          train_node_set = set(self.train_data.sources).union(self.train_data.destinations)
+          assert len(train_node_set & new_test_node_set) == 0
+          new_node_set = node_set - train_node_set
 
-        # validation and test with all edges
-        self.val_data = Data(sources[val_mask], destinations[val_mask], timestamps[val_mask],
-                        edge_idxs[val_mask], labels[val_mask])
-        self.test_data = Data(sources[test_mask], destinations[test_mask], timestamps[test_mask],
-                        edge_idxs[test_mask], labels[test_mask])
+          edge_contains_new_node_mask = np.array([(a in new_node_set or b in new_node_set) for a, b in zip(sources, destinations)])
+          new_node_val_mask = np.logical_and(val_mask, edge_contains_new_node_mask)
+          new_node_test_mask = np.logical_and(test_mask, edge_contains_new_node_mask)
 
+          # validation and test with edges that at least has one new node (not in training set)
+          self.val_data = Data(sources[new_node_val_mask], destinations[new_node_val_mask],
+                                  timestamps[new_node_val_mask],
+                                  edge_idxs[new_node_val_mask], labels[new_node_val_mask])
 
-        # 4. 构造用于归纳测试的新节点验证集和测试集
-        # 4.1 构造new_node_set（所有节点 - 训练集的节点）
-        train_node_set = set(self.train_data.sources).union(self.train_data.destinations)
-        assert len(train_node_set & new_test_node_set) == 0
-        new_node_set = node_set - train_node_set
+          self.test_data = Data(sources[new_node_test_mask], destinations[new_node_test_mask],
+                                      timestamps[new_node_test_mask], edge_idxs[new_node_test_mask],
+                                      labels[new_node_test_mask])
 
-        edge_contains_new_node_mask = np.array([(a in new_node_set or b in new_node_set) for a, b in zip(sources, destinations)])
-        new_node_val_mask = np.logical_and(val_mask, edge_contains_new_node_mask)
-        new_node_test_mask = np.logical_and(test_mask, edge_contains_new_node_mask)
-
-        # validation and test with edges that at least has one new node (not in training set)
-        self.new_node_val_data = Data(sources[new_node_val_mask], destinations[new_node_val_mask],
-                                timestamps[new_node_val_mask],
-                                edge_idxs[new_node_val_mask], labels[new_node_val_mask])
-
-        self.new_node_test_data = Data(sources[new_node_test_mask], destinations[new_node_test_mask],
-                                    timestamps[new_node_test_mask], edge_idxs[new_node_test_mask],
-                                    labels[new_node_test_mask])
-
-
-        print(f"The dataset has {self.full_data.n_interactions} interactions, involving {self.full_data.n_unique_nodes} different nodes")
-        print(f"The training dataset has {self.train_data.n_interactions} interactions, involving {self.train_data.n_unique_nodes} different nodes")
-        print(f"The validation dataset has {self.val_data.n_interactions} interactions, involving {self.val_data.n_unique_nodes} different nodes")
-        print(f"The test dataset has {self.test_data.n_interactions} interactions, involving {self.test_data.n_unique_nodes} different nodes")
-        print(f"The new node validation dataset has {self.new_node_val_data.n_interactions} interactions, involving {self.new_node_val_data.n_unique_nodes} different nodes")
-        print(f"The new node test dataset has {self.new_node_test_data.n_interactions} interactions, involving {self.new_node_test_data.n_unique_nodes} different nodes")
-        print(f"{len(new_test_node_set)} nodes were used for the inductive testing, i.e. are never seen during training")
+        print(f"The dataset has {self.full_data.n_interactions} interactions, involving {self.full_data.n_unique_nodes} different nodes ({self.full_data.n_unique_sources} unique sources and {self.full_data.n_unique_destinations} unique destinations)")
+        if inductive:
+          print("Using inductive setting, all nodes in val and test set are unseen during training")
+        print(f"The training dataset has {self.train_data.n_interactions} interactions, involving {self.train_data.n_unique_nodes} different nodes ({self.train_data.n_unique_sources} unique sources and {self.train_data.n_unique_destinations} unique destinations)")
+        print(f"The validation dataset has {self.val_data.n_interactions} interactions, involving {self.val_data.n_unique_nodes} different nodes ({self.val_data.n_unique_sources} unique sources and {self.val_data.n_unique_destinations} unique destinations)")
+        print(f"The test dataset has {self.test_data.n_interactions} interactions, involving {self.test_data.n_unique_nodes} different nodes ({self.test_data.n_unique_sources} unique sources and {self.test_data.n_unique_destinations} unique destinations)")
 
     def compute_time_statistics(self, sources, destinations, timestamps):
       last_timestamp_sources = dict()
