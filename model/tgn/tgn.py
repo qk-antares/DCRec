@@ -9,7 +9,7 @@ from modules.message_aggregator import get_message_aggregator
 from modules.message_function import get_message_function
 from modules.memory_updater import get_memory_updater
 from modules.embedding_module import get_embedding_module
-from model.time_encoding import TimeEncode
+from time_encoding import TimeEncode
 
 
 class TGN(torch.nn.Module):
@@ -206,9 +206,9 @@ class TGN(torch.nn.Module):
         source_node_embedding = memory[source_nodes]
         destination_node_embedding = memory[destination_nodes]
         if negative_nodes.ndim == 2:
-            negative_node_embedding = memory[negative_nodes_flat].view(n_neg, n_samples, -1)
+          negative_node_embedding = memory[negative_nodes_flat].view(n_neg, n_samples, -1)
         else:
-            negative_node_embedding = memory[negative_nodes]
+          negative_node_embedding = memory[negative_nodes]
 
     return source_node_embedding, destination_node_embedding, negative_node_embedding
 
@@ -238,9 +238,9 @@ class TGN(torch.nn.Module):
     
     # Flatten negative embeddings from [n_neg, batch_size, feat_dim] to [n_neg * batch_size, feat_dim]
     if negative_nodes.ndim == 2:
-        negative_node_embedding_flat = negative_node_embedding.view(-1, negative_node_embedding.shape[-1])
+      negative_node_embedding_flat = negative_node_embedding.view(-1, negative_node_embedding.shape[-1])
     else:
-        negative_node_embedding_flat = negative_node_embedding
+      negative_node_embedding_flat = negative_node_embedding
     
     # Concatenate destination and negative embeddings
     target_embeddings = torch.cat([destination_node_embedding, negative_node_embedding_flat], dim=0)
@@ -251,7 +251,7 @@ class TGN(torch.nn.Module):
     
     # Reshape neg_score from [n_neg * batch_size] to [n_neg, batch_size]
     if negative_nodes.ndim == 2:
-        neg_score = neg_score.view(n_neg, n_samples)
+      neg_score = neg_score.view(n_neg, n_samples)
 
     return pos_score.sigmoid(), neg_score.sigmoid()
 

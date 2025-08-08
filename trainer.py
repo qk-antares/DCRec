@@ -6,7 +6,7 @@ import numpy as np
 from tqdm import tqdm
 
 from evaluation.evaluation import eval_edge_prediction
-from model.tgn import TGN
+from model.tgn.tgn import TGN
 from utils.utils import EarlyStopMonitor
 
 class TGNTrainer:

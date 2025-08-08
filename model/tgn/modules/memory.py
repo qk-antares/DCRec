@@ -2,8 +2,6 @@ import torch
 from torch import nn
 
 from collections import defaultdict
-from copy import deepcopy
-
 
 class Memory(nn.Module):
 
