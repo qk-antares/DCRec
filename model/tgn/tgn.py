@@ -4,12 +4,12 @@ import torch
 from collections import defaultdict
 
 from utils.utils import MergeLayer
-from modules.memory import Memory
-from modules.message_aggregator import get_message_aggregator
-from modules.message_function import get_message_function
-from modules.memory_updater import get_memory_updater
-from modules.embedding_module import get_embedding_module
-from time_encoding import TimeEncode
+from model.tgn.modules.memory import Memory
+from model.tgn.modules.message_aggregator import get_message_aggregator
+from model.tgn.modules.message_function import get_message_function
+from model.tgn.modules.memory_updater import get_memory_updater
+from model.tgn.modules.embedding_module import get_embedding_module
+from model.tgn.time_encoding import TimeEncode
 
 
 class TGN(torch.nn.Module):
@@ -140,21 +140,28 @@ class TGN(torch.nn.Module):
       ### Compute differences between the time the memory of a node was last updated,
       ### and the time for which we want to compute the embedding of a node
       ### TODO: 下面这段逻辑可以简化吗？
-      source_time_diffs = torch.LongTensor(edge_times).to(self.device) - last_update[
-        source_nodes].long()
-      source_time_diffs = (source_time_diffs - self.mean_time_shift_src) / self.std_time_shift_src
-      destination_time_diffs = torch.LongTensor(edge_times).to(self.device) - last_update[
-        destination_nodes].long()
-      destination_time_diffs = (destination_time_diffs - self.mean_time_shift_dst) / self.std_time_shift_dst
+      # source_time_diffs = torch.LongTensor(edge_times).to(self.device) - last_update[
+      #   source_nodes].long()
+      # source_time_diffs = (source_time_diffs - self.mean_time_shift_src) / self.std_time_shift_src
+      # destination_time_diffs = torch.LongTensor(edge_times).to(self.device) - last_update[
+      #   destination_nodes].long()
+      # destination_time_diffs = (destination_time_diffs - self.mean_time_shift_dst) / self.std_time_shift_dst
       
-      # Repeat edge_times for each negative sample
-      repeated_edge_times = np.tile(edge_times, n_neg)
-      negative_time_diffs = torch.LongTensor(repeated_edge_times).to(self.device) - last_update[
-        negative_nodes_flat].long()
-      negative_time_diffs = (negative_time_diffs - self.mean_time_shift_dst) / self.std_time_shift_dst
+      # # Repeat edge_times for each negative sample
+      # repeated_edge_times = np.tile(edge_times, n_neg)
+      # negative_time_diffs = torch.LongTensor(repeated_edge_times).to(self.device) - last_update[
+      #   negative_nodes_flat].long()
+      # negative_time_diffs = (negative_time_diffs - self.mean_time_shift_dst) / self.std_time_shift_dst
 
-      time_diffs = torch.cat([source_time_diffs, destination_time_diffs, negative_time_diffs],
-                             dim=0)
+      # time_diffs = torch.cat([source_time_diffs, destination_time_diffs, negative_time_diffs],
+      #                        dim=0)
+      
+      # TODO: 也许可以对比下标准化与不标准化的区别？在实际应用中，mean_time_shift会随时间推移而变化
+      # TODO: 在只有[src, dst, ts]这种交互的场景下，src和dst的mean_time_shift和std_time_shift是一致的
+      # TODO: time_diffs的计算应该在if外？否在not self.use_memory下面将报错
+      # TODO: 只有Jodie的Time projection会使用time_diffs
+      time_diffs = torch.LongTensor(timestamps).to(self.device) - last_update[nodes].long()
+      time_diffs = (time_diffs - self.mean_time_shift_dst) / self.std_time_shift_dst
 
     # Compute the embeddings using the embedding module
     node_embedding = self.embedding_module.compute_embedding(memory=memory,
@@ -174,6 +181,8 @@ class TGN(torch.nn.Module):
         negative_node_embedding = negative_node_embedding.view(n_neg, n_samples, feat_dim)
 
     if self.use_memory:
+      # TODO: 下面这段代码的意义不明，似乎只有self.memory.clear_messages是有意义的
+      # TODO: 只是再次执行函数开始的update_memory，并判断两者是否相等
       if self.memory_update_at_start:
         # Persist the updates to the memory only for sources and destinations (since now we have
         # new messages for them)

@@ -18,7 +18,7 @@ class Data:
 
 # 整个数据集，包含多个Data对象，提供访问和处理数据的功能
 class Dataset:
-    def __init__(self, dataset_name, randomize_features=False, train_ratio=0.8, val_ratio=0.1, inductive=False, uniform=False):
+    def __init__(self, dataset_name, randomize_features=False, train_ratio=0.8, val_ratio=0.1, inductive=False, uniform=False, logger=None):
         """
         初始化数据集
         :param dataset_name: 数据集名称
@@ -26,7 +26,9 @@ class Dataset:
         :param train_ratio: 训练集比例
         :param val_ratio: 验证集比例
         :param uniform: 是否进行均匀采样
+        :param logger: 日志记录器
         """
+        self.logger = logger
 
         assert train_ratio + val_ratio < 1, "Train and validation ratios must sum to less than 1."
 
@@ -56,7 +58,7 @@ class Dataset:
         self.compute_time_statistics(self.full_data.sources, self.full_data.destinations, self.full_data.timestamps)
 
     def read_data(self, dataset_name, randomize_features):
-        print(f"Reading dataset {dataset_name}...")
+        self.logger.info(f"Reading dataset {dataset_name}...")
         # 读取图数据
         self.graph_df = pd.read_csv(f'data/{dataset_name}/processed/graph.csv')
         self.edge_features = np.load(f'data/{dataset_name}/processed/edges.npy')
@@ -66,7 +68,7 @@ class Dataset:
             self.node_features = np.random.rand(self.node_features.shape[0], self.node_features.shape[1])
 
     def split_data(self, train_ratio, val_ratio, inductive=False):
-        print(f"Splitting data into train, val, and test sets with ratios {train_ratio}, {val_ratio}...")
+        self.logger.info(f"Splitting data into train, val, and test sets with ratios {train_ratio}, {val_ratio}...")
 
         # 1. 构造全体数据
         sources = self.graph_df.u.values
@@ -134,12 +136,12 @@ class Dataset:
                                       timestamps[new_node_test_mask], edge_idxs[new_node_test_mask],
                                       labels[new_node_test_mask])
 
-        print(f"The dataset has {self.full_data.n_interactions} interactions, involving {self.full_data.n_unique_nodes} different nodes ({self.full_data.n_unique_sources} unique sources and {self.full_data.n_unique_destinations} unique destinations)")
+        self.logger.info(f"The dataset has {self.full_data.n_interactions} interactions, involving {self.full_data.n_unique_nodes} different nodes ({self.full_data.n_unique_sources} unique sources and {self.full_data.n_unique_destinations} unique destinations)")
         if inductive:
-          print("Using inductive setting, all nodes in val and test set are unseen during training")
-        print(f"The training dataset has {self.train_data.n_interactions} interactions, involving {self.train_data.n_unique_nodes} different nodes ({self.train_data.n_unique_sources} unique sources and {self.train_data.n_unique_destinations} unique destinations)")
-        print(f"The validation dataset has {self.val_data.n_interactions} interactions, involving {self.val_data.n_unique_nodes} different nodes ({self.val_data.n_unique_sources} unique sources and {self.val_data.n_unique_destinations} unique destinations)")
-        print(f"The test dataset has {self.test_data.n_interactions} interactions, involving {self.test_data.n_unique_nodes} different nodes ({self.test_data.n_unique_sources} unique sources and {self.test_data.n_unique_destinations} unique destinations)")
+          self.logger.info("Using inductive setting, all nodes in val and test set are unseen during training")
+        self.logger.info(f"The training dataset has {self.train_data.n_interactions} interactions, involving {self.train_data.n_unique_nodes} different nodes ({self.train_data.n_unique_sources} unique sources and {self.train_data.n_unique_destinations} unique destinations)")
+        self.logger.info(f"The validation dataset has {self.val_data.n_interactions} interactions, involving {self.val_data.n_unique_nodes} different nodes ({self.val_data.n_unique_sources} unique sources and {self.val_data.n_unique_destinations} unique destinations)")
+        self.logger.info(f"The test dataset has {self.test_data.n_interactions} interactions, involving {self.test_data.n_unique_nodes} different nodes ({self.test_data.n_unique_sources} unique sources and {self.test_data.n_unique_destinations} unique destinations)")
 
     def compute_time_statistics(self, sources, destinations, timestamps):
       last_timestamp_sources = dict()

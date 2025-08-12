@@ -1,0 +1,13 @@
+2025-08-12 11:23:45,184 - root - INFO - Namespace(aggregator='last', batch_size=256, data='ml-1m', drop_out=0.1, dyrep=False, embedding_module='graph_attention', gpu=0, inductive=False, lr=0.0001, memory_dim=129, memory_update_at_end=False, memory_updater='gru', message_dim=100, message_function='identity', n_epoch=50, n_heads=2, n_layers=1, n_neg=10, n_neighbors=10, n_runs=1, n_test_neg=1000, node_dim=128, patience=5, prefix='tgn-attn', randomize_features=False, time_dim=128, train_ratio=0.8, uniform=False, use_destination_embedding_in_message=False, use_memory=True, use_source_embedding_in_message=False, valid_ratio=0.1)
+2025-08-12 11:23:45,184 - root - INFO - Reading dataset ml-1m...
+2025-08-12 11:23:45,294 - root - INFO - Splitting data into train, val, and test sets with ratios 0.8, 0.1...
+2025-08-12 11:23:45,530 - root - INFO - The dataset has 575281 interactions, involving 9571 different nodes (6038 unique sources and 3533 unique destinations)
+2025-08-12 11:23:45,530 - root - INFO - The training dataset has 460226 interactions, involving 8846 different nodes (5378 unique sources and 3468 unique destinations)
+2025-08-12 11:23:45,530 - root - INFO - The validation dataset has 57527 interactions, involving 3982 different nodes (1088 unique sources and 2894 unique destinations)
+2025-08-12 11:23:45,530 - root - INFO - The test dataset has 57528 interactions, involving 4252 different nodes (1220 unique sources and 3032 unique destinations)
+2025-08-12 11:23:48,876 - root - INFO - Using device: cpu
+2025-08-12 11:23:51,026 - root - INFO - Starting run 1/1
+2025-08-12 11:23:51,862 - root - INFO - num of training instances: 460226
+2025-08-12 11:23:53,339 - root - INFO - num of batches per epoch: 1798
+2025-08-12 12:24:00,420 - root - INFO - Test statistics: MRR: 0.1176, Recall@10: 0.2626, Recall@20: 0.3890
+2025-08-12 14:29:32,777 - root - INFO - Saving TGN model
