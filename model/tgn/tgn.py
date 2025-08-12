@@ -114,13 +114,10 @@ class TGN(torch.nn.Module):
     """
 
     n_samples = len(source_nodes)
-    n_neg = negative_nodes.shape[0] if negative_nodes.ndim == 2 else 1
+    n_neg = negative_nodes.shape[0]
     
     # Flatten negative_nodes from [n_neg, batch_size] to [n_neg * batch_size]
-    if negative_nodes.ndim == 2:
-        negative_nodes_flat = negative_nodes.flatten()
-    else:
-        negative_nodes_flat = negative_nodes
+    negative_nodes_flat = negative_nodes.flatten()
     
     nodes = np.concatenate([source_nodes, destination_nodes, negative_nodes_flat])
     positives = np.concatenate([source_nodes, destination_nodes])
@@ -139,23 +136,6 @@ class TGN(torch.nn.Module):
 
       ### Compute differences between the time the memory of a node was last updated,
       ### and the time for which we want to compute the embedding of a node
-      ### TODO: 下面这段逻辑可以简化吗？
-      # source_time_diffs = torch.LongTensor(edge_times).to(self.device) - last_update[
-      #   source_nodes].long()
-      # source_time_diffs = (source_time_diffs - self.mean_time_shift_src) / self.std_time_shift_src
-      # destination_time_diffs = torch.LongTensor(edge_times).to(self.device) - last_update[
-      #   destination_nodes].long()
-      # destination_time_diffs = (destination_time_diffs - self.mean_time_shift_dst) / self.std_time_shift_dst
-      
-      # # Repeat edge_times for each negative sample
-      # repeated_edge_times = np.tile(edge_times, n_neg)
-      # negative_time_diffs = torch.LongTensor(repeated_edge_times).to(self.device) - last_update[
-      #   negative_nodes_flat].long()
-      # negative_time_diffs = (negative_time_diffs - self.mean_time_shift_dst) / self.std_time_shift_dst
-
-      # time_diffs = torch.cat([source_time_diffs, destination_time_diffs, negative_time_diffs],
-      #                        dim=0)
-      
       # TODO: 也许可以对比下标准化与不标准化的区别？在实际应用中，mean_time_shift会随时间推移而变化
       # TODO: 在只有[src, dst, ts]这种交互的场景下，src和dst的mean_time_shift和std_time_shift是一致的
       # TODO: time_diffs的计算应该在if外？否在not self.use_memory下面将报错

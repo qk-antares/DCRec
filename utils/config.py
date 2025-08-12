@@ -22,11 +22,11 @@ def parse_arguments():
     parser.add_argument('--n_test_neg', type=int, default=1000, help='Number of negative samples to generate when evaluating')
     parser.add_argument('--lr', type=float, default=0.0001, help='Learning rate')
     parser.add_argument('--patience', type=int, default=5, help='Patience for early stopping')
-    parser.add_argument('--n_runs', type=int, default=1, help='Number of runs')
     parser.add_argument('--drop_out', type=float, default=0.1, help='Dropout probability')
     parser.add_argument('--gpu', type=int, default=0, help='Idx for the gpu to use')
     parser.add_argument('--node_dim', type=int, default=128, help='Dimensions of the node embedding')
     parser.add_argument('--time_dim', type=int, default=128, help='Dimensions of the time embedding')
+    parser.add_argument('--seed', type=int, default=0, help='Random seed for reproducibility')
 
     # 模型相关
     parser.add_argument('--n_heads', type=int, default=2, help='Number of heads used in attention layer')

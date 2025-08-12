@@ -1,6 +1,7 @@
 import torch
 import numpy as np
 import pickle
+import random
 from pathlib import Path
 
 from utils.config import parse_arguments
@@ -8,8 +9,19 @@ from utils.logger_utils import setup_logger
 from utils.dataset import Dataset
 from trainer import TGNTrainer
 
-torch.manual_seed(0)
-np.random.seed(0)
+def set_all_seeds(seed=0):
+    """设置所有随机种子以确保可重现性"""
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    
+    # 如果使用GPU，也设置GPU的随机种子
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)  # 对于多GPU
+    
+    # 设置PyTorch的随机数生成器状态
+    torch.use_deterministic_algorithms(True, warn_only=True)
 
 def create_directories():
     """创建必要的目录"""
@@ -18,20 +30,6 @@ def create_directories():
     Path("results/").mkdir(parents=True, exist_ok=True)
     Path("log/").mkdir(parents=True, exist_ok=True)
 
-
-def run_single_experiment(args, dataset, device, logger, run_id):
-    """运行单次实验"""
-    results_path = f"results/{args.prefix}_{run_id}.pkl"
-    
-    # 创建训练器并训练模型
-    trainer = TGNTrainer(args, dataset, device, logger)
-    results = trainer.train_model()
-    
-    # 保存结果
-    pickle.dump(results, open(results_path, "wb"))
-    logger.info(f'Results saved to {results_path}')
-    
-    return results
 
 def main():
     """主函数"""
@@ -51,13 +49,17 @@ def main():
     device = torch.device(f'cuda:{args.gpu}' if torch.cuda.is_available() else 'cpu')
     logger.info(f'Using device: {device}')
     
-    # 运行多次实验
-    all_results = []
-    for run_id in range(args.n_runs):
-        logger.info(f'Starting run {run_id+1}/{args.n_runs}')
-        results = run_single_experiment(args, dataset, device, logger, run_id)
-        all_results.append(results)
-        logger.info(f'Run {run_id} completed')
+    # 运行实验
+    set_all_seeds(args.seed)
+    
+    # 创建训练器并训练模型
+    trainer = TGNTrainer(args, dataset, device, logger)
+    results = trainer.train_model()
+    
+    # 保存结果
+    results_path = f"results/{args.prefix}.pkl"
+    pickle.dump(results, open(results_path, "wb"))
+    logger.info(f'Results saved to {results_path}')
 
 if __name__ == '__main__':
     main()

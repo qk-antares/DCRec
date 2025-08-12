@@ -12,7 +12,10 @@
                 "--use_memory",
                 "--prefix", "tgn-attn",
                 "--n_neg", "10",
-                "--n_runs", "1"
+                "--train_ratio", "0.01",
+                "--valid_ratio", "0.001",
+                "--n_epoch", "2",
+                // "--memory_update_at_end"
             ],
             "env": {
                 "PYTHONPATH": "${workspaceFolder}"
