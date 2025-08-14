@@ -2,5 +2,6 @@ data
 results
 saved_checkpoints
 saved_models
+saved_memory
 **/__pycache__/
 train.log

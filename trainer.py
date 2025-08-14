@@ -1,4 +1,7 @@
+import gzip
 import math
+import pickle
+import shutil
 import time
 import logging
 import torch
@@ -186,22 +189,29 @@ class TGNTrainer:
             self.logger.info(f'Epoch mean loss: {train_loss}')
             self.logger.info(f'val MRR: {val_mrr:.4f}, Recall@10: {val_recall_10:.4f}, Recall@20: {val_recall_20:.4f}')
             
+            get_checkpoint_path = lambda epoch: f'saved_checkpoints/{self.args.prefix}-{self.args.data}-{epoch+1}.pth'
+            get_memory_path = lambda epoch: f'saved_memory/{self.args.prefix}-{self.args.data}-{epoch+1}.gz'
+
+            # 保存模型
+            torch.save(model.state_dict(), get_checkpoint_path(epoch))
+            # with gzip.open(get_memory_path(epoch), 'wb') as f:
+            #     pickle.dump(model.memory.messages, f)
+
             # 早停检查（使用MRR作为主要指标）
-            get_checkpoint_path = lambda epoch: f'./saved_checkpoints/{self.args.prefix}-{self.args.data}-{epoch+1}.pth'
             if early_stopper.early_stop_check(val_mrr):
                 self.logger.info('No improvement over {} epochs, stop training'.format(early_stopper.max_round))
                 self.logger.info(f'Loading the best model at epoch {early_stopper.best_epoch}')
                 best_model_path = get_checkpoint_path(early_stopper.best_epoch)
                 model.load_state_dict(torch.load(best_model_path))
+                # with gzip.open(get_memory_path(epoch), 'rb') as f:
+                #     model.messages = pickle.load(f)
                 self.logger.info(f'Loaded the best model at epoch {early_stopper.best_epoch} for inference')
                 model.eval()
                 break
-            else:
-                torch.save(model.state_dict(), get_checkpoint_path(epoch))
-        
-        # 获取验证结束时的内存状态
-        if self.args.use_memory:
-            val_memory_backup = model.memory.backup_memory()
+
+        # 获取【最佳的那个epoch】验证结束时的内存状态
+        # if self.args.use_memory:
+        #     val_memory_backup = model.memory.backup_memory()
         
         # 测试
         test_mrr, test_recall_10, test_recall_20 = self.test(model)
@@ -210,10 +220,12 @@ class TGNTrainer:
         
         # 保存模型
         self.logger.info('Saving TGN model')
-        if self.args.use_memory:
-            model.memory.restore_memory(val_memory_backup)
-        model_save_path = f'saved_models/{self.args.prefix}-{self.args.data}.pth'
-        torch.save(model.state_dict(), model_save_path)
+        shutil.copy(get_checkpoint_path(early_stopper.best_epoch), f'saved_models/{self.args.prefix}-{self.args.data}.pth')
+        shutil.copy(get_memory_path(early_stopper.best_epoch), f'saved_models/{self.args.prefix}-{self.args.data}-memory.pkl')
+        # if self.args.use_memory:
+        #     model.memory.restore_memory(val_memory_backup)
+        # model_save_path = 
+        # torch.save(model.state_dict(), model_save_path)
         self.logger.info('TGN model saved')
         
         return {

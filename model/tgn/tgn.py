@@ -156,9 +156,8 @@ class TGN(torch.nn.Module):
     negative_node_embedding = node_embedding[2 * n_samples:]
     
     # Reshape negative_node_embedding from [n_neg * batch_size, feat_dim] to [n_neg, batch_size, feat_dim]
-    if negative_nodes.ndim == 2:
-        feat_dim = negative_node_embedding.shape[1]
-        negative_node_embedding = negative_node_embedding.view(n_neg, n_samples, feat_dim)
+    feat_dim = negative_node_embedding.shape[1]
+    negative_node_embedding = negative_node_embedding.view(n_neg, n_samples, feat_dim)
 
     if self.use_memory:
       # TODO: 下面这段代码的意义不明，似乎只有self.memory.clear_messages是有意义的
