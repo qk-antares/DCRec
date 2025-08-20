@@ -1,0 +1,75 @@
+2025-08-20 07:35:20,091 - root - INFO - Namespace(aggregator='last', batch_size=256, data='ml-1m', drop_out=0.1, dyrep=False, embedding_module='graph_attention', gpu=0, inductive=False, l2_regularization=0.0, lr=0.001, memory_dim=129, memory_update_at_end=False, memory_updater='gru', message_dim=100, message_function='identity', n_epoch=20, n_heads=2, n_layers=1, n_neg=10, n_neighbors=10, n_skip_val=20, n_test_neg=1000, node_dim=128, noise_pruning_ratio=0.0, patience=5, prefix='tgn-attn-compare', randomize_features=False, seed=0, time_dim=128, train_ratio=0.8, uniform=False, use_destination_embedding_in_message=False, use_memory=True, use_source_embedding_in_message=False, valid_ratio=0.1)
+2025-08-20 07:35:20,091 - root - INFO - Reading dataset ml-1m...
+2025-08-20 07:35:20,193 - root - INFO - Splitting data into train, val, and test sets with ratios 0.8, 0.1...
+2025-08-20 07:35:20,429 - root - INFO - The dataset has 575281 interactions, involving 9571 different nodes (6038 unique sources and 3533 unique destinations)
+2025-08-20 07:35:20,429 - root - INFO - The training dataset has 460226 interactions, involving 8846 different nodes (5378 unique sources and 3468 unique destinations)
+2025-08-20 07:35:20,429 - root - INFO - The validation dataset has 57527 interactions, involving 3982 different nodes (1088 unique sources and 2894 unique destinations)
+2025-08-20 07:35:20,429 - root - INFO - The test dataset has 57528 interactions, involving 4252 different nodes (1220 unique sources and 3032 unique destinations)
+2025-08-20 07:35:22,124 - root - INFO - Using device: cpu
+2025-08-20 07:35:22,519 - root - INFO - num of training instances: 460226
+2025-08-20 07:35:22,520 - root - INFO - num of batches per epoch: 1798
+2025-08-20 07:35:22,520 - root - INFO - Skipping validation for first 20 epochs (warm-up period)
+2025-08-20 07:49:06,110 - root - INFO - epoch: 1 took 823.59s
+2025-08-20 07:49:06,110 - root - INFO - Epoch losses - Total: 0.3039, BPR: 0.3039
+2025-08-20 07:49:06,110 - root - INFO - Validation skipped (warm-up period)
+2025-08-20 08:02:41,998 - root - INFO - epoch: 2 took 815.89s
+2025-08-20 08:02:41,998 - root - INFO - Epoch losses - Total: 0.2542, BPR: 0.2542
+2025-08-20 08:02:41,998 - root - INFO - Validation skipped (warm-up period)
+2025-08-20 08:16:16,399 - root - INFO - epoch: 3 took 814.40s
+2025-08-20 08:16:16,399 - root - INFO - Epoch losses - Total: 0.2256, BPR: 0.2256
+2025-08-20 08:16:16,399 - root - INFO - Validation skipped (warm-up period)
+2025-08-20 08:29:47,631 - root - INFO - epoch: 4 took 811.23s
+2025-08-20 08:29:47,631 - root - INFO - Epoch losses - Total: 0.2086, BPR: 0.2086
+2025-08-20 08:29:47,631 - root - INFO - Validation skipped (warm-up period)
+2025-08-20 08:43:22,970 - root - INFO - epoch: 5 took 815.34s
+2025-08-20 08:43:22,970 - root - INFO - Epoch losses - Total: 0.1968, BPR: 0.1968
+2025-08-20 08:43:22,970 - root - INFO - Validation skipped (warm-up period)
+2025-08-20 08:56:58,595 - root - INFO - epoch: 6 took 815.62s
+2025-08-20 08:56:58,595 - root - INFO - Epoch losses - Total: 0.1887, BPR: 0.1887
+2025-08-20 08:56:58,595 - root - INFO - Validation skipped (warm-up period)
+2025-08-20 09:10:29,536 - root - INFO - epoch: 7 took 810.94s
+2025-08-20 09:10:29,536 - root - INFO - Epoch losses - Total: 0.1819, BPR: 0.1819
+2025-08-20 09:10:29,536 - root - INFO - Validation skipped (warm-up period)
+2025-08-20 09:23:59,670 - root - INFO - epoch: 8 took 810.13s
+2025-08-20 09:23:59,670 - root - INFO - Epoch losses - Total: 0.1784, BPR: 0.1784
+2025-08-20 09:23:59,670 - root - INFO - Validation skipped (warm-up period)
+2025-08-20 09:37:29,874 - root - INFO - epoch: 9 took 810.20s
+2025-08-20 09:37:29,874 - root - INFO - Epoch losses - Total: 0.1748, BPR: 0.1748
+2025-08-20 09:37:29,874 - root - INFO - Validation skipped (warm-up period)
+2025-08-20 09:50:54,933 - root - INFO - epoch: 10 took 805.06s
+2025-08-20 09:50:54,933 - root - INFO - Epoch losses - Total: 0.1728, BPR: 0.1728
+2025-08-20 09:50:54,933 - root - INFO - Validation skipped (warm-up period)
+2025-08-20 10:04:20,050 - root - INFO - epoch: 11 took 805.12s
+2025-08-20 10:04:20,051 - root - INFO - Epoch losses - Total: 0.1701, BPR: 0.1701
+2025-08-20 10:04:20,051 - root - INFO - Validation skipped (warm-up period)
+2025-08-20 10:17:45,138 - root - INFO - epoch: 12 took 805.09s
+2025-08-20 10:17:45,139 - root - INFO - Epoch losses - Total: 0.1699, BPR: 0.1699
+2025-08-20 10:17:45,139 - root - INFO - Validation skipped (warm-up period)
+2025-08-20 10:31:09,748 - root - INFO - epoch: 13 took 804.61s
+2025-08-20 10:31:09,748 - root - INFO - Epoch losses - Total: 0.1658, BPR: 0.1658
+2025-08-20 10:31:09,748 - root - INFO - Validation skipped (warm-up period)
+2025-08-20 10:44:33,290 - root - INFO - epoch: 14 took 803.54s
+2025-08-20 10:44:33,290 - root - INFO - Epoch losses - Total: 0.1642, BPR: 0.1642
+2025-08-20 10:44:33,290 - root - INFO - Validation skipped (warm-up period)
+2025-08-20 10:57:57,646 - root - INFO - epoch: 15 took 804.36s
+2025-08-20 10:57:57,646 - root - INFO - Epoch losses - Total: 0.1632, BPR: 0.1632
+2025-08-20 10:57:57,646 - root - INFO - Validation skipped (warm-up period)
+2025-08-20 11:11:21,888 - root - INFO - epoch: 16 took 804.24s
+2025-08-20 11:11:21,888 - root - INFO - Epoch losses - Total: 0.1631, BPR: 0.1631
+2025-08-20 11:11:21,888 - root - INFO - Validation skipped (warm-up period)
+2025-08-20 11:24:47,878 - root - INFO - epoch: 17 took 805.99s
+2025-08-20 11:24:47,878 - root - INFO - Epoch losses - Total: 0.1599, BPR: 0.1599
+2025-08-20 11:24:47,878 - root - INFO - Validation skipped (warm-up period)
+2025-08-20 11:38:11,752 - root - INFO - epoch: 18 took 803.87s
+2025-08-20 11:38:11,752 - root - INFO - Epoch losses - Total: 0.1611, BPR: 0.1611
+2025-08-20 11:38:11,752 - root - INFO - Validation skipped (warm-up period)
+2025-08-20 11:51:35,123 - root - INFO - epoch: 19 took 803.37s
+2025-08-20 11:51:35,123 - root - INFO - Epoch losses - Total: 0.1597, BPR: 0.1597
+2025-08-20 11:51:35,123 - root - INFO - Validation skipped (warm-up period)
+2025-08-20 12:05:00,470 - root - INFO - epoch: 20 took 805.35s
+2025-08-20 12:05:00,470 - root - INFO - Epoch losses - Total: 0.1586, BPR: 0.1586
+2025-08-20 12:05:00,470 - root - INFO - Validation skipped (warm-up period)
+2025-08-20 12:05:00,470 - root - INFO - No validation performed, saving final model
+2025-08-20 12:40:34,669 - root - INFO - Test statistics: MRR: 0.1042, Recall@10: 0.2361, Recall@20: 0.3558
+2025-08-20 12:40:34,669 - root - INFO - TGN model training completed
+2025-08-20 12:40:34,843 - root - INFO - Results saved to results/tgn-attn-compare.pkl

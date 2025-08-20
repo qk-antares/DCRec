@@ -23,10 +23,9 @@ class Memory(nn.Module):
     Initializes the memory to all zeros. It should be called at the start of each epoch.
     """
     # Treat memory as parameter so that it is saved and loaded together with the model
-    self.memory = nn.Parameter(torch.zeros((self.n_nodes, self.memory_dimension)).to(self.device),
-                               requires_grad=False)
-    self.last_update = nn.Parameter(torch.zeros(self.n_nodes).to(self.device),
-                                    requires_grad=False)
+    # Use buffers for memory state - they are saved/loaded with model but don't participate in optimization
+    self.register_buffer('memory', torch.zeros((self.n_nodes, self.memory_dimension)).to(self.device))
+    self.register_buffer('last_update', torch.zeros(self.n_nodes).to(self.device))
 
     self.messages = defaultdict(list)
 
@@ -58,9 +57,8 @@ class Memory(nn.Module):
       self.messages[k] = [(x[0].clone(), x[1].clone()) for x in v]
 
   def detach_memory(self):
-    self.memory.detach_()
-
-    # Detach all stored messages
+    # Buffers don't need detaching since they don't participate in gradient computation
+    # Only detach stored messages
     for k, v in self.messages.items():
       new_node_messages = []
       for message in v:
@@ -71,3 +69,6 @@ class Memory(nn.Module):
   def clear_messages(self, nodes):
     for node in nodes:
       self.messages[node] = []
+
+  def clear_all_messages(self):
+    self.messages = defaultdict(list)

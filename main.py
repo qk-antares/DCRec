@@ -26,8 +26,8 @@ def set_all_seeds(seed=0):
 def create_directories():
     """创建必要的目录"""
     Path("saved_models/").mkdir(parents=True, exist_ok=True)
-    Path("saved_checkpoints/").mkdir(parents=True, exist_ok=True)
-    Path("saved_memory/").mkdir(parents=True, exist_ok=True)
+    # Path("saved_checkpoints/").mkdir(parents=True, exist_ok=True)
+    # Path("saved_memory/").mkdir(parents=True, exist_ok=True)
     Path("results/").mkdir(parents=True, exist_ok=True)
     Path("log/").mkdir(parents=True, exist_ok=True)
 

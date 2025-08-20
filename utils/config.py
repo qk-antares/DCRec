@@ -20,13 +20,18 @@ def parse_arguments():
     parser.add_argument('--n_neighbors', type=int, default=10, help='Number of neighbors to sample')
     parser.add_argument('--n_neg', type=int, default=10, help='Number of negative samples to generate')
     parser.add_argument('--n_test_neg', type=int, default=1000, help='Number of negative samples to generate when evaluating')
-    parser.add_argument('--lr', type=float, default=0.0001, help='Learning rate')
+    parser.add_argument('--lr', type=float, default=0.001, help='Learning rate')
     parser.add_argument('--patience', type=int, default=5, help='Patience for early stopping')
+    parser.add_argument('--n_skip_val', type=int, default=30, help='Number of epochs to skip validation (model warm-up period)')
     parser.add_argument('--drop_out', type=float, default=0.1, help='Dropout probability')
     parser.add_argument('--gpu', type=int, default=0, help='Idx for the gpu to use')
     parser.add_argument('--node_dim', type=int, default=128, help='Dimensions of the node embedding')
     parser.add_argument('--time_dim', type=int, default=128, help='Dimensions of the time embedding')
     parser.add_argument('--seed', type=int, default=0, help='Random seed for reproducibility')
+    
+    # 噪声剪枝相关参数
+    parser.add_argument('--noise_pruning_ratio', type=float, default=0.0, help='Noise pruning ratio (w), 0.0 means no pruning')
+    parser.add_argument('--l2_regularization', type=float, default=0.0, help='L2 regularization coefficient (alpha)')
 
     # 模型相关
     parser.add_argument('--n_heads', type=int, default=2, help='Number of heads used in attention layer')
