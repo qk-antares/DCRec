@@ -1,10 +1,10 @@
 
 import torch
 
-from modules.gconv import Siamese_GConv
-from modules.affinity import Affinity
-from modules.sinkhorn import Sinkhorn
-from modules.graph_pooling import DenseGraphPooling
+from model.cgfa.modules.gconv import Siamese_GConv
+from model.cgfa.modules.affinity import Affinity
+from model.cgfa.modules.sinkhorn import Sinkhorn
+from model.cgfa.modules.graph_pooling import DenseGraphPooling
 from torch import Tensor, List
 
 class CGFA(torch.nn.Module):

@@ -20,7 +20,7 @@ def parse_arguments():
     parser.add_argument('--n_neighbors', type=int, default=10, help='Number of neighbors to sample')
     parser.add_argument('--n_neg', type=int, default=10, help='Number of negative samples to generate')
     parser.add_argument('--n_test_neg', type=int, default=1000, help='Number of negative samples to generate when evaluating')
-    parser.add_argument('--lr', type=float, default=0.001, help='Learning rate')
+    parser.add_argument('--lr', type=float, default=0.0001, help='Learning rate')
     parser.add_argument('--patience', type=int, default=5, help='Patience for early stopping')
     parser.add_argument('--n_skip_val', type=int, default=30, help='Number of epochs to skip validation (model warm-up period)')
     parser.add_argument('--drop_out', type=float, default=0.1, help='Dropout probability')
@@ -47,6 +47,17 @@ def parse_arguments():
     parser.add_argument('--use_destination_embedding_in_message', action='store_true', help='Whether to use the embedding of the destination node as part of the message')
     parser.add_argument('--use_source_embedding_in_message', action='store_true', help='Whether to use the embedding of the source node as part of the message')
     parser.add_argument('--dyrep', action='store_true', help='Whether to run the dyrep model')
+    parser.add_argument("--max_iter", type=int, default=10, help="Maximum iterations for Sinkhorn algorithm")
+    parser.add_argument("--tau", type=float, default=1., help="Regularization parameter; smaller tau approaches Hungarian solution")
+    
+    # DCRec模型相关参数
+    parser.add_argument('--model', type=str, default='tgn', choices=['tgn', 'dcrec'], help='Model type: tgn or dcrec (dual-channel recommendation)')
+    parser.add_argument('--cgfa_in_channels', type=int, default=None, help='CGFA input channels (auto-detected if None)')
+    parser.add_argument('--cgfa_out_channels', type=int, default=128, help='CGFA output channels')
+    parser.add_argument('--cgfa_max_iter', type=int, default=10, help='CGFA maximum iterations')
+    parser.add_argument('--cgfa_tau', type=float, default=0.05, help='CGFA tau parameter for Sinkhorn algorithm')
+    parser.add_argument('--fusion_hidden_dim', type=int, default=256, help='DCRec fusion network hidden dimension')
+    parser.add_argument('--final_hidden_dim', type=int, default=128, help='DCRec final embedding dimension')
 
     try:
         args = parser.parse_args()

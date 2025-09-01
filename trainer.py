@@ -1,7 +1,4 @@
-import gzip
 import math
-import pickle
-import shutil
 import time
 import logging
 import torch
@@ -9,16 +6,17 @@ import numpy as np
 from tqdm import tqdm
 
 from evaluation.evaluation import eval_edge_prediction
+from model.dcrec import DCRec
 from model.tgn.tgn import TGN
 from utils.utils import EarlyStopMonitor
 
 class TGNTrainer:
     """TGN模型训练器"""
-    def __init__(self, args, dataset, device, logger):
+    def __init__(self, args, dataset, device):
         self.args = args
         self.dataset = dataset
         self.device = device
-        self.logger = logger
+        self.logger = logging.getLogger(__name__)
         
     def create_model(self):
         """创建TGN模型"""
@@ -52,9 +50,9 @@ class TGNTrainer:
     def train_epoch(self, model, optimizer, epoch):
         """训练一个epoch"""
         if self.args.use_memory:
-            model.memory.__init_memory__()
+            model.tgn.memory.__init_memory__()
         
-        model.set_neighbor_finder(self.dataset.train_ngh_finder)
+        model.tgn.set_neighbor_finder(self.dataset.train_ngh_finder)
         model.train()
         
         num_instance = len(self.dataset.train_data.sources)
@@ -78,7 +76,7 @@ class TGNTrainer:
             progress_bar.set_postfix(postfix)
             
             if self.args.use_memory:
-                model.memory.detach_memory()
+                model.tgn.memory.detach_memory()
         
         return {
             'total_loss': np.mean(epoch_total_losses),
@@ -163,7 +161,7 @@ class TGNTrainer:
     
     def validate(self, model):
         """验证模型"""
-        model.set_neighbor_finder(self.dataset.full_ngh_finder)
+        model.tgn.set_neighbor_finder(self.dataset.full_ngh_finder)
         
         val_mrr, val_recall_10, val_recall_20 = eval_edge_prediction(
             model, self.dataset.val_data, self.args.n_neighbors, 
@@ -173,7 +171,7 @@ class TGNTrainer:
     
     def test(self, model):
         """测试模型"""
-        model.set_neighbor_finder(self.dataset.full_ngh_finder)
+        model.tgn.set_neighbor_finder(self.dataset.full_ngh_finder)
         
         test_mrr, test_recall_10, test_recall_20 = eval_edge_prediction(
             model, self.dataset.test_data, self.args.n_neighbors,
@@ -218,75 +216,72 @@ class TGNTrainer:
         model_save_path = f'saved_models/{self.args.prefix}-{self.args.data}.pth'
         memory_save_path = f'saved_models/{self.args.prefix}-{self.args.data}-memory.pkl'
 
-        # for epoch in range(self.args.n_epoch):
-        #     start_epoch = time.time()
+        for epoch in range(self.args.n_epoch):
+            start_epoch = time.time()
             
-        #     # 训练
-        #     train_loss_dict = self.train_epoch(model, optimizer, epoch)
-        #     train_total_losses.append(train_loss_dict['total_loss'])
-        #     train_bpr_losses.append(train_loss_dict['bpr_loss'])
-        #     train_l2_losses.append(train_loss_dict['l2_loss'])
+            # 训练
+            train_loss_dict = self.train_epoch(model, optimizer, epoch)
+            train_total_losses.append(train_loss_dict['total_loss'])
+            train_bpr_losses.append(train_loss_dict['bpr_loss'])
+            train_l2_losses.append(train_loss_dict['l2_loss'])
             
-        #     epoch_time = time.time() - start_epoch
-        #     epoch_times.append(epoch_time)
+            epoch_time = time.time() - start_epoch
+            epoch_times.append(epoch_time)
             
-        #     total_epoch_time = time.time() - start_epoch
-        #     total_epoch_times.append(total_epoch_time)
+            total_epoch_time = time.time() - start_epoch
+            total_epoch_times.append(total_epoch_time)
             
-        #     # 记录训练日志
-        #     self.logger.info(f'epoch: {epoch+1} took {total_epoch_time:.2f}s')
-        #     log_msg = f'Epoch losses - Total: {train_loss_dict["total_loss"]:.4f}, BPR: {train_loss_dict["bpr_loss"]:.4f}'
-        #     if self.args.l2_regularization > 0:
-        #         log_msg += f', L2: {train_loss_dict["l2_loss"]:.6f}'
-        #     self.logger.info(log_msg)
+            # 记录训练日志
+            self.logger.info(f'epoch: {epoch+1} took {total_epoch_time:.2f}s')
+            log_msg = f'Epoch losses - Total: {train_loss_dict["total_loss"]:.4f}, BPR: {train_loss_dict["bpr_loss"]:.4f}'
+            if self.args.l2_regularization > 0:
+                log_msg += f', L2: {train_loss_dict["l2_loss"]:.6f}'
+            self.logger.info(log_msg)
             
-        #     # 验证阶段：从第n_skip_val+1个epoch开始
-        #     if epoch >= self.args.n_skip_val:
-        #         if epoch == self.args.n_skip_val:
-        #             # 初次开始验证时初始化早停监控器
-        #             early_stopper = EarlyStopMonitor(max_round=self.args.patience)
-        #             self.logger.info(f'Starting validation from epoch {epoch+1}')
+            # 验证阶段：从第n_skip_val+1个epoch开始
+            if epoch >= self.args.n_skip_val:
+                if epoch == self.args.n_skip_val:
+                    # 初次开始验证时初始化早停监控器
+                    early_stopper = EarlyStopMonitor(max_round=self.args.patience)
+                    self.logger.info(f'Starting validation from epoch {epoch+1}')
                 
-        #         # 验证
-        #         val_mrr, val_recall_10, val_recall_20 = self.validate(model)
-        #         val_mrrs.append(val_mrr)
-        #         val_recall_10s.append(val_recall_10)
-        #         val_recall_20s.append(val_recall_20)
+                # 验证
+                val_mrr, val_recall_10, val_recall_20 = self.validate(model)
+                val_mrrs.append(val_mrr)
+                val_recall_10s.append(val_recall_10)
+                val_recall_20s.append(val_recall_20)
                 
-        #         self.logger.info(f'val MRR: {val_mrr:.4f}, Recall@10: {val_recall_10:.4f}, Recall@20: {val_recall_20:.4f}')
+                self.logger.info(f'val MRR: {val_mrr:.4f}, Recall@10: {val_recall_10:.4f}, Recall@20: {val_recall_20:.4f}')
                 
-        #         # 如果是新的最佳性能，保存模型
-        #         if val_mrr > best_val_mrr:
-        #             best_val_mrr = val_mrr
-        #             best_epoch = epoch
+                # 如果是新的最佳性能，保存模型
+                if val_mrr > best_val_mrr:
+                    best_val_mrr = val_mrr
+                    best_epoch = epoch
                     
-        #             # 保存最佳模型
-        #             torch.save(model.state_dict(), model_save_path)
-        #             with gzip.open(memory_save_path, 'wb') as f:
-        #                 pickle.dump(model.memory.messages, f)
-                    
-        #             self.logger.info(f'New best validation MRR: {val_mrr:.4f} at epoch {epoch+1}, model saved')
+                    # 保存最佳模型
+                    torch.save(model.state_dict(), model_save_path)
+                    self.logger.info(f'New best validation MRR: {val_mrr:.4f} at epoch {epoch+1}, model saved')
                 
-        #         # 早停检查
-        #         if early_stopper.early_stop_check(val_mrr):
-        #             self.logger.info('No improvement over {} epochs, stop training'.format(early_stopper.max_round))
-        #             self.logger.info(f'Best model was at epoch {best_epoch+1} with MRR: {best_val_mrr:.4f}')
-        #             break
-        #     else:
-        #         # 填充空值以保持数组长度一致
-        #         val_mrrs.append(0.0)
-        #         val_recall_10s.append(0.0)
-        #         val_recall_20s.append(0.0)
-        #         self.logger.info('Validation skipped (warm-up period)')
+                # 早停检查
+                if early_stopper.early_stop_check(val_mrr):
+                    self.logger.info('No improvement over {} epochs, stop training'.format(early_stopper.max_round))
+                    self.logger.info(f'Best model was at epoch {best_epoch+1} with MRR: {best_val_mrr:.4f}')
+                    break
+            else:
+                # 填充空值以保持数组长度一致
+                val_mrrs.append(0.0)
+                val_recall_10s.append(0.0)
+                val_recall_20s.append(0.0)
+                self.logger.info('Validation skipped (warm-up period)')
 
-        # # 如果没有进行过验证（所有epoch都被跳过），保存最后的模型
-        # if best_epoch == -1:
-        #     self.logger.info('No validation performed, saving final model')
-        #     torch.save(model.state_dict(), model_save_path)
-        #     best_epoch = self.args.n_epoch - 1
+        # 如果没有进行过验证（所有epoch都被跳过），保存最后的模型
+        if best_epoch == -1:
+            self.logger.info('No validation performed, saving final model')
+            torch.save(model.state_dict(), model_save_path)
+            best_epoch = self.args.n_epoch - 1
         
         # 加载最佳模型进行测试（包括模型的记忆）
-        model.memory.clear_all_messages()
+        model.tgn.memory.clear_all_messages()
         model.load_state_dict(torch.load(model_save_path, weights_only=True))
         model.eval()
         
@@ -311,3 +306,54 @@ class TGNTrainer:
             "best_epoch": best_epoch,
             "best_val_mrr": best_val_mrr
         }
+
+
+class DCRecTrainer(TGNTrainer):
+    """DCRec模型训练器，继承自TGN训练器并重写模型创建方法"""
+    
+    def __init__(self, args, dataset, device):
+        super().__init__(args, dataset, device)
+        self.logger.info("Initializing DCRec trainer")
+    
+    def create_model(self):
+        """创建DCRec模型"""
+        dcrec = DCRec(
+            neighbor_finder=self.dataset.train_ngh_finder, 
+            node_features=self.dataset.node_features, 
+            edge_features=self.dataset.edge_features, 
+            device=self.device,
+            n_layers=self.args.n_layers,
+            n_heads=self.args.n_heads, 
+            dropout=self.args.drop_out, 
+            use_memory=self.args.use_memory,
+            message_dimension=self.args.message_dim, 
+            memory_dimension=self.args.memory_dim,
+            memory_update_at_start=not self.args.memory_update_at_end,
+            embedding_module_type=self.args.embedding_module,
+            message_function=self.args.message_function,
+            aggregator_type=self.args.aggregator,
+            memory_updater_type=self.args.memory_updater,
+            n_neighbors=self.args.n_neighbors,
+            mean_time_shift_src=self.dataset.mean_time_shift_src, 
+            std_time_shift_src=self.dataset.std_time_shift_src,
+            mean_time_shift_dst=self.dataset.mean_time_shift_dst, 
+            std_time_shift_dst=self.dataset.std_time_shift_dst,
+            use_destination_embedding_in_message=self.args.use_destination_embedding_in_message,
+            use_source_embedding_in_message=self.args.use_source_embedding_in_message,
+            dyrep=self.args.dyrep,
+            # CGFA参数
+            cgfa_in_channels=self.dataset.node_cg_emb.shape[-1],
+            cgfa_out_channels=self.args.cgfa_out_channels,
+            max_iter=self.args.cgfa_max_iter,
+            tau=self.args.cgfa_tau,
+            # 融合网络参数
+            fusion_hidden_dim=self.args.fusion_hidden_dim,
+            final_hidden_dim=self.args.final_hidden_dim,
+            dataset=self.dataset
+        )
+        
+        self.logger.info(f"DCRec model created with TGN output dim: {dcrec.tgn_output_dim}, "
+                        f"CGFA output dim: {dcrec.cgfa_output_dim}")
+        
+        return dcrec.to(self.device)
+

@@ -1,3 +1,4 @@
+import logging
 import numpy as np
 import pandas as pd
 
@@ -18,7 +19,7 @@ class Data:
 
 # 整个数据集，包含多个Data对象，提供访问和处理数据的功能
 class Dataset:
-    def __init__(self, dataset_name, randomize_features=False, train_ratio=0.8, val_ratio=0.1, inductive=False, uniform=False, logger=None):
+    def __init__(self, dataset_name, randomize_features=False, train_ratio=0.8, val_ratio=0.1, inductive=False, uniform=False):
         """
         初始化数据集
         :param dataset_name: 数据集名称
@@ -28,13 +29,16 @@ class Dataset:
         :param uniform: 是否进行均匀采样
         :param logger: 日志记录器
         """
-        self.logger = logger
+        self.logger = logging.getLogger(__name__)
 
         assert train_ratio + val_ratio < 1, "Train and validation ratios must sum to less than 1."
 
         self.graph_df = None
         self.node_features = None
         self.edge_features = None
+        self.node_cg_n = None
+        self.node_cg_emb = None
+        self.node_cg_A = None
         self.read_data(dataset_name, randomize_features)
 
         self.full_data = None
@@ -63,6 +67,12 @@ class Dataset:
         self.graph_df = pd.read_csv(f'data/{dataset_name}/processed/graph.csv')
         self.edge_features = np.load(f'data/{dataset_name}/processed/edges.npy')
         self.node_features = np.load(f'data/{dataset_name}/processed/nodes.npy')
+
+        # 初始化侧信息图数据
+        self.node_cg_n = None
+        self.node_cg_emb = None
+        self.node_cg_A = None
+        self._initialize_side_info_graphs()
 
         if randomize_features:
             self.node_features = np.random.rand(self.node_features.shape[0], self.node_features.shape[1])
@@ -142,6 +152,116 @@ class Dataset:
         self.logger.info(f"The training dataset has {self.train_data.n_interactions} interactions, involving {self.train_data.n_unique_nodes} different nodes ({self.train_data.n_unique_sources} unique sources and {self.train_data.n_unique_destinations} unique destinations)")
         self.logger.info(f"The validation dataset has {self.val_data.n_interactions} interactions, involving {self.val_data.n_unique_nodes} different nodes ({self.val_data.n_unique_sources} unique sources and {self.val_data.n_unique_destinations} unique destinations)")
         self.logger.info(f"The test dataset has {self.test_data.n_interactions} interactions, involving {self.test_data.n_unique_nodes} different nodes ({self.test_data.n_unique_sources} unique sources and {self.test_data.n_unique_destinations} unique destinations)")
+
+    def _initialize_side_info_graphs(self):
+        """
+        初始化侧信息图数据结构
+        为每个User/Item创建对应的图，其中节点代表侧信息特征
+        """
+        self.logger.info("Initializing side information graphs...")
+        
+        num_nodes = self.node_features.shape[0]  # 总节点数（包括User和Item）
+        feature_dim = self.node_features.shape[1]  # 特征维度
+        
+        # 初始化节点数数组
+        self.node_cg_n = np.zeros(num_nodes, dtype=np.int32)
+        
+        # 计算每个节点的特征数（非零特征数量）
+        max_features = 0
+        for i in range(num_nodes):
+            # 计算当前节点有多少个非零特征
+            num_features = np.sum(self.node_features[i] > 0)
+            self.node_cg_n[i] = num_features
+            max_features = max(max_features, num_features)
+        
+        self.logger.info(f"Maximum number of features per node: {max_features}")
+        
+        # 初始化节点嵌入矩阵 [num_nodes, max_features, feature_dim]
+        self.node_cg_emb = np.zeros((num_nodes, max_features, feature_dim), dtype=np.float32)
+        
+        # 初始化邻接矩阵 [num_nodes, max_features, max_features]
+        self.node_cg_A = np.zeros((num_nodes, max_features, max_features), dtype=np.float32)
+        
+        # 为每个节点构建对应的图
+        for i in range(num_nodes):
+            node_features = self.node_features[i]
+            # 找到所有非零特征的位置
+            feature_indices = np.where(node_features > 0)[0]
+            num_features = len(feature_indices)
+            
+            if num_features == 0:
+                # 如果没有特征，跳过
+                continue
+            
+            # 为每个特征创建独热编码
+            for j, feature_idx in enumerate(feature_indices):
+                # 创建独热向量
+                one_hot = np.zeros(feature_dim, dtype=np.float32)
+                one_hot[feature_idx] = 1.0
+                self.node_cg_emb[i, j] = one_hot
+            
+            # 创建完全图的邻接矩阵
+            if num_features > 1:
+                # 如果有多个特征，创建完全图
+                for j in range(num_features):
+                    for k in range(num_features):
+                        if j != k:  # 不包括自环
+                            self.node_cg_A[i, j, k] = 1.0
+            elif num_features == 1:
+                # 如果只有一个特征，没有边（或者可以添加自环）
+                # self.node_cg_A[i, 0, 0] = 1.0  # 可选：添加自环
+                pass
+        
+    def get_side_info_graph(self, node_idx):
+        """
+        获取指定节点的侧信息图
+        Args:
+            node_idx: 节点索引
+        Returns:
+            tuple: (num_features, node_embeddings, adjacency_matrix)
+        """
+        num_features = self.node_cg_n[node_idx]
+        node_embeddings = self.node_cg_emb[node_idx, :num_features, :]
+        adjacency_matrix = self.node_cg_A[node_idx, :num_features, :num_features]
+        
+        return num_features, node_embeddings, adjacency_matrix
+        
+    def get_batch_side_info_graphs(self, node_indices):
+        """
+        批量获取多个节点的侧信息图
+        Args:
+            node_indices: 节点索引列表
+        Returns:
+            tuple: (feature_counts, embeddings, adjacency_matrices)
+                其中每个元素都是对应节点的图信息
+        """
+        return self.node_cg_n[node_indices], self.node_cg_emb[node_indices], self.node_cg_A[node_indices]
+
+    def get_side_info_statistics(self):
+        """
+        获取侧信息图的统计信息
+        Returns:
+            dict: 包含各种统计信息的字典
+        """
+        stats = {
+            'total_nodes': len(self.node_cg_n),
+            'nodes_with_features': np.sum(self.node_cg_n > 0),
+            'nodes_without_features': np.sum(self.node_cg_n == 0),
+            'avg_features_per_node': np.mean(self.node_cg_n),
+            'max_features_per_node': np.max(self.node_cg_n),
+            'min_features_per_node': np.min(self.node_cg_n),
+            'feature_distribution': np.bincount(self.node_cg_n).tolist(),
+            'total_graph_nodes': np.sum(self.node_cg_n),
+            'total_graph_edges': 0
+        }
+        
+        # 计算总边数
+        for i in range(len(self.node_cg_n)):
+            num_features = self.node_cg_n[i]
+            if num_features > 1:
+                stats['total_graph_edges'] += num_features * (num_features - 1)
+        
+        return stats
 
     def compute_time_statistics(self, sources, destinations, timestamps):
       last_timestamp_sources = dict()
