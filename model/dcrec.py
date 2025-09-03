@@ -1,3 +1,5 @@
+import logging
+import time
 import numpy as np
 import torch
 
@@ -31,6 +33,8 @@ class DCRec(torch.nn.Module):
                  dataset=None):
         super(DCRec, self).__init__()
         
+        self.logger = logging.getLogger(__name__)
+
         self.dataset = dataset
 
         self.device = device
@@ -103,9 +107,11 @@ class DCRec(torch.nn.Module):
             dest_emb: [batch_size, cgfa_output_dim] destination embeddings
         """
         # 获取source和destination的侧信息图数据
+        t1 = time.perf_counter()
+
         source_counts, source_embs, source_adjs = self.dataset.get_batch_side_info_graphs(sources)
         dest_counts, dest_embs, dest_adjs = self.dataset.get_batch_side_info_graphs(destinations)
-        
+
         # 转换为tensor
         source_embs = torch.FloatTensor(source_embs).to(self.device)
         source_adjs = torch.FloatTensor(source_adjs).to(self.device)
@@ -115,6 +121,10 @@ class DCRec(torch.nn.Module):
         source_counts = torch.LongTensor(source_counts).to(self.device)
         dest_counts = torch.LongTensor(dest_counts).to(self.device)
         
+        t2 = time.perf_counter()
+        self.logger.info(f"\t [CGFA] 获取侧信息 阶段耗时: {t2-t1:.4f} 秒")
+
+        t3 = time.perf_counter()
         # 通过CGFA获取图级别表示
         source_graph_emb, dest_graph_emb = self.cgfa(
             A_src=source_adjs,
@@ -124,6 +134,8 @@ class DCRec(torch.nn.Module):
             emb_dst=dest_embs,
             n_nodes_dst=dest_counts
         )
+        t4 = time.perf_counter()
+        self.logger.info(f"\t [CGFA] 获取图嵌入 阶段耗时: {t4-t3:.4f} 秒")
         
         return source_graph_emb, dest_graph_emb
 
@@ -143,8 +155,11 @@ class DCRec(torch.nn.Module):
         n_neg = negative_nodes.shape[0]
 
         # 1. get source_embedding1 and target_embeddings1 by tgn
+        t1 = time.perf_counter()
         source_node_embedding1, destination_node_embedding1, negative_node_embedding1 = self.tgn.compute_temporal_embeddings(
         source_nodes, destination_nodes, negative_nodes, edge_times, edge_idxs, n_neighbors)
+        t2 = time.perf_counter()
+        self.logger.info(f"[DCRec] TGN阶段耗时: {t2-t1:.4f} 秒")
 
         # Repeat source embeddings (1 + n_neg) times: once for positive, n_neg times for negatives
         source_embedding1 = source_node_embedding1.repeat(1 + n_neg, 1)
@@ -154,12 +169,16 @@ class DCRec(torch.nn.Module):
         target_embeddings1 = torch.cat([destination_node_embedding1, negative_node_embedding_flat], dim=0)
 
         # 2. get source_embedding2 and target_embeddings2 by cgfa
+        t3 = time.perf_counter()
         source_embedding2, target_embeddings2 = self._compute_cgfa_embeddings(
             np.repeat(source_nodes, repeats=(1 + n_neg), axis=0), np.concatenate([destination_nodes, negative_nodes.reshape(-1)], axis=0)
         )
+        t4 = time.perf_counter()
+        self.logger.info(f"[DCRec] CGFA阶段耗时: {t4-t3:.4f} 秒")
 
         # 3. get score
         # 通过融合MLP
+        t5 = time.perf_counter()
         source_fused = self.user_fusion_mlp(source_embedding1, source_embedding2)
         target_fused = self.item_fusion_mlp(target_embeddings1, target_embeddings2)
 
@@ -169,5 +188,8 @@ class DCRec(torch.nn.Module):
         neg_score = score[n_samples:]
         
         neg_score = neg_score.view(n_neg, n_samples)
+
+        t6 = time.perf_counter()
+        self.logger.info(f"[DCRec] 融合与打分阶段耗时: {t6-t5:.4f} 秒")
 
         return pos_score, neg_score

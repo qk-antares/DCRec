@@ -1,4 +1,6 @@
 
+import logging
+import time
 import torch
 
 from model.cgfa.modules.gconv import Siamese_GConv
@@ -14,6 +16,8 @@ class CGFA(torch.nn.Module):
 
     def __init__(self, in_channels, out_channels, max_iter, tau):
         super(CGFA, self).__init__()
+
+        self.logger = logging.getLogger(__name__)
 
         # 图内聚合
         self.intra_gconv = Siamese_GConv(in_channels, out_channels)
@@ -38,14 +42,31 @@ class CGFA(torch.nn.Module):
 
         :return: Output global emb of g1 and g2
         """
+        t1 = time.perf_counter()
         emb1, emb2 = self.intra_gconv([A_src, emb_src, True], [A_dst, emb_dst, True])
-        s = self.affinity(emb1, emb2)
-        s = self.sinkhorn(s, n_nodes_src, n_nodes_dst, dummy_row=True)
+        t2 = time.perf_counter()
+        self.logger.info(f"\t [CGFA] 图内嵌入 阶段耗时: {t2-t1:.4f} 秒")
 
+        t3 = time.perf_counter()
+        s = self.affinity(emb1, emb2)
+        t4 = time.perf_counter()
+        self.logger.info(f"\t [CGFA] 亲和度分数 阶段耗时: {t4-t3:.4f} 秒")
+
+        t5 = time.perf_counter()
+        s = self.sinkhorn(s, n_nodes_src, n_nodes_dst, dummy_row=True)
+        t6 = time.perf_counter()
+        self.logger.info(f"\t [CGFA] 归一化 阶段耗时: {t6-t5:.4f} 秒")
+
+        t7 = time.perf_counter()
         new_emb1 = self.cross_graph(torch.cat((emb1, torch.bmm(s, emb2)), dim=-1))
         new_emb2 = self.cross_graph(torch.cat((emb2, torch.bmm(s.transpose(1, 2), emb1)), dim=-1))
+        t8 = time.perf_counter()
+        self.logger.info(f"\t [CGFA] 跨图嵌入 阶段耗时: {t8-t7:.4f} 秒")
 
+        t9 = time.perf_counter()
         global_emb1 = self.graph_pooling1(new_emb1)
         global_emb2 = self.graph_pooling2(new_emb2)
+        t10 = time.perf_counter()
+        self.logger.info(f"\t [CGFA] 图池化 阶段耗时: {t10-t9:.4f} 秒")
 
         return global_emb1, global_emb2
