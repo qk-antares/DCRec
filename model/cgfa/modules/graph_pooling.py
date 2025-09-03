@@ -32,10 +32,21 @@ class DenseGraphPooling(torch.nn.Module):
         B, N, _ = emb.size()
 
         if mask is not None:
-            # 统计每个图的有效节点数 [B, 1]
-            num_nodes = mask.view(B, N).sum(dim=1).unsqueeze(-1)
-            # 有效节点的特征均值 [B, F]
-            mean = emb.sum(dim=1) / num_nodes.to(emb.dtype)
+            # # 统计每个图的有效节点数 [B, 1]
+            # num_nodes = mask.view(B, N).sum(dim=1).unsqueeze(-1)
+            # # 有效节点的特征均值 [B, F]
+            # mean = emb.sum(dim=1) / num_nodes.to(emb.dtype)
+
+            # 将mask扩展到emb的最后一维
+            mask_expanded = mask.view(B, N, 1).to(emb.dtype)  # [B, N, 1]
+            # 只保留有效节点特征
+            emb_masked = emb * mask_expanded                  # [B, N, d]
+            # 有效节点特征之和
+            sum_emb = emb_masked.sum(dim=1)                   # [B, d]
+            # 有效节点数
+            num_nodes = mask.sum(dim=1, keepdim=True)         # [B, 1]
+            # 有效节点的特征均值
+            mean = sum_emb / num_nodes.clamp(min=1).to(emb.dtype)  # 防止除0
         else:
             # 所有节点的均值 [B, F]
             mean = emb.mean(dim=1)

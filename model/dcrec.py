@@ -92,8 +92,19 @@ class DCRec(torch.nn.Module):
                                          final_hidden_dim,
                                          1)
         
-
+    def __init_memory__(self):
+        self.tgn.memory.__init_memory__()
     
+    def set_neighbor_finder(self, neighbor_finder):
+        self.tgn.neighbor_finder = neighbor_finder
+        self.tgn.embedding_module.neighbor_finder = neighbor_finder
+
+    def clear_all_messages(self):
+        self.tgn.memory.clear_all_messages()
+
+    def detach_memory(self):
+        self.tgn.memory.detach_memory()
+
     def _compute_cgfa_embeddings(self, sources, destinations):
         """
         计算CGFA嵌入

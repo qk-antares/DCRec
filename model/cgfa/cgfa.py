@@ -42,31 +42,36 @@ class CGFA(torch.nn.Module):
 
         :return: Output global emb of g1 and g2
         """
-        t1 = time.perf_counter()
+        n = A_src.shape[-1]
+
+        # [batch_size, n, d]
         emb1, emb2 = self.intra_gconv([A_src, emb_src, True], [A_dst, emb_dst, True])
-        t2 = time.perf_counter()
-        self.logger.info(f"\t [CGFA] 图内嵌入 阶段耗时: {t2-t1:.4f} 秒")
 
-        t3 = time.perf_counter()
+        # [batch_size, n, n]
         s = self.affinity(emb1, emb2)
-        t4 = time.perf_counter()
-        self.logger.info(f"\t [CGFA] 亲和度分数 阶段耗时: {t4-t3:.4f} 秒")
 
-        t5 = time.perf_counter()
-        s = self.sinkhorn(s, n_nodes_src, n_nodes_dst, dummy_row=True)
-        t6 = time.perf_counter()
-        self.logger.info(f"\t [CGFA] 归一化 阶段耗时: {t6-t5:.4f} 秒")
+        # 构造mask
+        mask1 = torch.arange(n)[None, :] < n_nodes_src[:, None]  # [batch_size, n]
+        mask2 = torch.arange(n)[None, :] < n_nodes_dst[:, None]  # [batch_size, n]
 
-        t7 = time.perf_counter()
-        new_emb1 = self.cross_graph(torch.cat((emb1, torch.bmm(s, emb2)), dim=-1))
-        new_emb2 = self.cross_graph(torch.cat((emb2, torch.bmm(s.transpose(1, 2), emb1)), dim=-1))
-        t8 = time.perf_counter()
-        self.logger.info(f"\t [CGFA] 跨图嵌入 阶段耗时: {t8-t7:.4f} 秒")
+        # 对s做行softmax（G2的有效节点）
+        mask2_expanded = mask2[:, None, :]  # [batch_size, 1, n]
+        s_masked = s.masked_fill(~mask2_expanded, float('-1e9'))
+        s_softmax = torch.softmax(s_masked, dim=-1)
 
-        t9 = time.perf_counter()
-        global_emb1 = self.graph_pooling1(new_emb1)
-        global_emb2 = self.graph_pooling2(new_emb2)
-        t10 = time.perf_counter()
-        self.logger.info(f"\t [CGFA] 图池化 阶段耗时: {t10-t9:.4f} 秒")
+        # 对s.transpose(1,2)做行softmax（G1的有效节点）
+        mask1_expanded = mask1[:, None, :]  # [batch_size, 1, n]
+        sT = s.transpose(1, 2)
+        sT_masked = sT.masked_fill(~mask1_expanded, float('-1e9'))
+        sT_softmax = torch.softmax(sT_masked, dim=-1)
+
+        new_emb1 = self.cross_graph(torch.cat((emb1, torch.bmm(s_softmax, emb2)), dim=-1))
+        new_emb2 = self.cross_graph(torch.cat((emb2, torch.bmm(sT_softmax, emb1)), dim=-1))
+
+        # new_emb1 = self.cross_graph(torch.cat((emb1, torch.bmm(torch.softmax(s, dim=-1), emb2)), dim=-1))
+        # new_emb2 = self.cross_graph(torch.cat((emb2, torch.bmm(torch.softmax(s.transpose(1, 2), dim=-1), emb1)), dim=-1))
+
+        global_emb1 = self.graph_pooling1(new_emb1, mask1)
+        global_emb2 = self.graph_pooling2(new_emb2, mask2)
 
         return global_emb1, global_emb2

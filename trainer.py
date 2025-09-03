@@ -10,14 +10,56 @@ from model.dcrec import DCRec
 from model.tgn.tgn import TGN
 from utils.utils import EarlyStopMonitor
 
-class TGNTrainer:
-    """TGN模型训练器"""
+class Trainer:
     def __init__(self, args, dataset, device):
         self.args = args
         self.dataset = dataset
         self.device = device
         self.logger = logging.getLogger(__name__)
+
+    def train_model(self):
+        pass
+    
+    def compute_bpr_loss(self, pos_scores, neg_scores):
+        """
+        计算基于噪声剪枝的BPR损失
+        Args:
+            pos_scores: [batch_size] - 正样本分数
+            neg_scores: [n_neg, batch_size] - 负样本分数
+        Returns:
+            总损失（BPR损失 + L2正则化）
+        """
+        # 将pos_scores扩展为[n_neg, batch_size]以便与neg_scores进行比较
+        pos_scores_expanded = pos_scores.unsqueeze(0).expand_as(neg_scores)  # [n_neg, batch_size]
         
+        # BPR损失: -log(sigmoid(pos_score - neg_score))
+        # 等价于: log(1 + exp(neg_score - pos_score))
+        score_diff = neg_scores - pos_scores_expanded  # [n_neg, batch_size]
+        
+        # 使用logsigmoid来数值稳定地计算log(sigmoid(x))
+        # log(sigmoid(x)) = -log(1 + exp(-x)) = -softplus(-x)
+        bpr_losses = -torch.nn.functional.logsigmoid(-score_diff)  # [n_neg, batch_size]
+        
+        # 噪声剪枝：只保留损失最小的(1-w)*n_neg个样本对
+        # 对每个batch样本，按损失升序排序
+        sorted_losses, _ = torch.sort(bpr_losses, dim=0)  # [n_neg, batch_size]
+        
+        # 计算保留的负样本数量
+        n_neg = bpr_losses.shape[0]
+        n_keep = max(1, int((1 - self.args.noise_pruning_ratio) * n_neg))
+        
+        # 只保留损失最小的n_keep个样本对
+        pruned_losses = sorted_losses[:n_keep, :]  # [n_keep, batch_size]
+        bpr_loss = pruned_losses.mean()
+        
+        return bpr_loss
+
+class TGNTrainer(Trainer):
+    """TGN模型训练器"""
+    def __init__(self, args, dataset, device):
+        super().__init__(args, dataset, device)
+        self.logger.info("Initializing TGN trainer")
+
     def create_model(self):
         """创建TGN模型"""
         tgn = TGN(
@@ -50,9 +92,9 @@ class TGNTrainer:
     def train_epoch(self, model, optimizer, epoch):
         """训练一个epoch"""
         if self.args.use_memory:
-            model.tgn.memory.__init_memory__()
-        
-        model.tgn.set_neighbor_finder(self.dataset.train_ngh_finder)
+            model.__init_memory__()
+
+        model.set_neighbor_finder(self.dataset.train_ngh_finder)
         model.train()
         
         num_instance = len(self.dataset.train_data.sources)
@@ -76,7 +118,7 @@ class TGNTrainer:
             progress_bar.set_postfix(postfix)
             
             if self.args.use_memory:
-                model.tgn.memory.detach_memory()
+                model.detach_memory()
         
         return {
             'total_loss': np.mean(epoch_total_losses),
@@ -124,44 +166,10 @@ class TGNTrainer:
         optimizer.step()
 
         return total_loss.item(), bpr_loss.item(), l2_loss if isinstance(l2_loss, float) else l2_loss.item()
-
-    def compute_bpr_loss(self, pos_scores, neg_scores):
-        """
-        计算基于噪声剪枝的BPR损失
-        Args:
-            pos_scores: [batch_size] - 正样本分数
-            neg_scores: [n_neg, batch_size] - 负样本分数
-        Returns:
-            总损失（BPR损失 + L2正则化）
-        """
-        # 将pos_scores扩展为[n_neg, batch_size]以便与neg_scores进行比较
-        pos_scores_expanded = pos_scores.unsqueeze(0).expand_as(neg_scores)  # [n_neg, batch_size]
-        
-        # BPR损失: -log(sigmoid(pos_score - neg_score))
-        # 等价于: log(1 + exp(neg_score - pos_score))
-        score_diff = neg_scores - pos_scores_expanded  # [n_neg, batch_size]
-        
-        # 使用logsigmoid来数值稳定地计算log(sigmoid(x))
-        # log(sigmoid(x)) = -log(1 + exp(-x)) = -softplus(-x)
-        bpr_losses = -torch.nn.functional.logsigmoid(-score_diff)  # [n_neg, batch_size]
-        
-        # 噪声剪枝：只保留损失最小的(1-w)*n_neg个样本对
-        # 对每个batch样本，按损失升序排序
-        sorted_losses, _ = torch.sort(bpr_losses, dim=0)  # [n_neg, batch_size]
-        
-        # 计算保留的负样本数量
-        n_neg = bpr_losses.shape[0]
-        n_keep = max(1, int((1 - self.args.noise_pruning_ratio) * n_neg))
-        
-        # 只保留损失最小的n_keep个样本对
-        pruned_losses = sorted_losses[:n_keep, :]  # [n_keep, batch_size]
-        bpr_loss = pruned_losses.mean()
-        
-        return bpr_loss
     
     def validate(self, model):
         """验证模型"""
-        model.tgn.set_neighbor_finder(self.dataset.full_ngh_finder)
+        model.set_neighbor_finder(self.dataset.full_ngh_finder)
         
         val_mrr, val_recall_10, val_recall_20 = eval_edge_prediction(
             model, self.dataset.val_data, self.args.n_neighbors, 
@@ -171,7 +179,7 @@ class TGNTrainer:
     
     def test(self, model):
         """测试模型"""
-        model.tgn.set_neighbor_finder(self.dataset.full_ngh_finder)
+        model.set_neighbor_finder(self.dataset.full_ngh_finder)
         
         test_mrr, test_recall_10, test_recall_20 = eval_edge_prediction(
             model, self.dataset.test_data, self.args.n_neighbors,
@@ -214,7 +222,6 @@ class TGNTrainer:
         
         # 模型保存路径
         model_save_path = f'saved_models/{self.args.prefix}-{self.args.data}.pth'
-        memory_save_path = f'saved_models/{self.args.prefix}-{self.args.data}-memory.pkl'
 
         for epoch in range(self.args.n_epoch):
             start_epoch = time.time()
@@ -281,7 +288,7 @@ class TGNTrainer:
             best_epoch = self.args.n_epoch - 1
         
         # 加载最佳模型进行测试（包括模型的记忆）
-        model.tgn.memory.clear_all_messages()
+        model.clear_all_messages()
         model.load_state_dict(torch.load(model_save_path, weights_only=True))
         model.eval()
         
@@ -289,7 +296,7 @@ class TGNTrainer:
         test_mrr, test_recall_10, test_recall_20 = self.test(model)
         
         self.logger.info('Test statistics: MRR: {:.4f}, Recall@10: {:.4f}, Recall@20: {:.4f}'.format(test_mrr, test_recall_10, test_recall_20))
-        self.logger.info('TGN model training completed')
+        self.logger.info('Model training completed')
         
         return {
             "val_mrrs": val_mrrs,

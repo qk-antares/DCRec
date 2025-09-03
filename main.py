@@ -26,10 +26,7 @@ def set_all_seeds(seed=0):
 def create_directories():
     """创建必要的目录"""
     Path("saved_models/").mkdir(parents=True, exist_ok=True)
-    Path("saved_checkpoints/").mkdir(parents=True, exist_ok=True)
-    Path("results/").mkdir(parents=True, exist_ok=True)
     Path("log/").mkdir(parents=True, exist_ok=True)
-
 
 def main():
     """主函数"""
@@ -52,7 +49,7 @@ def main():
     # 运行实验
     set_all_seeds(args.seed)
     
-    trainer = DCRecTrainer(args, dataset, device)
+    trainer = TGNTrainer(args, dataset, device)
     
     # 训练模型
     results = trainer.train_model()
