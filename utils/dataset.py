@@ -212,31 +212,6 @@ class Dataset:
                 # self.node_cg_A[i, 0, 0] = 1.0  # 可选：添加自环
                 pass
         
-    def get_side_info_graph(self, node_idx):
-        """
-        获取指定节点的侧信息图
-        Args:
-            node_idx: 节点索引
-        Returns:
-            tuple: (num_features, node_embeddings, adjacency_matrix)
-        """
-        num_features = self.node_cg_n[node_idx]
-        node_embeddings = self.node_cg_emb[node_idx, :num_features, :]
-        adjacency_matrix = self.node_cg_A[node_idx, :num_features, :num_features]
-        
-        return num_features, node_embeddings, adjacency_matrix
-        
-    def get_batch_side_info_graphs(self, node_indices):
-        """
-        批量获取多个节点的侧信息图
-        Args:
-            node_indices: 节点索引列表
-        Returns:
-            tuple: (feature_counts, embeddings, adjacency_matrices)
-                其中每个元素都是对应节点的图信息
-        """
-        return self.node_cg_n[node_indices], self.node_cg_emb[node_indices], self.node_cg_A[node_indices]
-
     def get_side_info_statistics(self):
         """
         获取侧信息图的统计信息

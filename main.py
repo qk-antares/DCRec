@@ -1,6 +1,5 @@
 import torch
 import numpy as np
-import pickle
 import random
 from pathlib import Path
 
@@ -32,7 +31,8 @@ def main():
     """主函数"""
     # 解析参数和设置配置
     args = parse_arguments()
-    
+    set_all_seeds(args.seed)
+
     # 创建目录
     create_directories()
 
@@ -46,18 +46,11 @@ def main():
     device = torch.device(f'cuda:{args.gpu}' if torch.cuda.is_available() else 'cpu')
     logger.info(f'Using device: {device}')
     
-    # 运行实验
-    set_all_seeds(args.seed)
-    
-    trainer = TGNTrainer(args, dataset, device)
+    # 运行实验    
+    trainer = DCRecTrainer(args, dataset, device)
     
     # 训练模型
-    results = trainer.train_model()
-    
-    # 保存结果
-    results_path = f"results/{args.prefix}.pkl"
-    pickle.dump(results, open(results_path, "wb"))
-    logger.info(f'Results saved to {results_path}')
+    trainer.train_model()
 
 if __name__ == '__main__':
     main()

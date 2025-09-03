@@ -4,12 +4,12 @@ import torch
 from collections import defaultdict
 
 from utils.utils import MergeLayer
-from model.tgn.modules.memory import Memory
-from model.tgn.modules.message_aggregator import get_message_aggregator
-from model.tgn.modules.message_function import get_message_function
-from model.tgn.modules.memory_updater import get_memory_updater
-from model.tgn.modules.embedding_module import get_embedding_module
-from model.tgn.time_encoding import TimeEncode
+from model.dcrec.tgn.modules.memory import Memory
+from model.dcrec.tgn.modules.message_aggregator import get_message_aggregator
+from model.dcrec.tgn.modules.message_function import get_message_function
+from model.dcrec.tgn.modules.memory_updater import get_memory_updater
+from model.dcrec.tgn.modules.embedding_module import get_embedding_module
+from model.dcrec.tgn.time_encoding import TimeEncode
 
 
 class TGN(torch.nn.Module):

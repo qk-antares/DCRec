@@ -3,7 +3,7 @@ from torch import nn
 import numpy as np
 import math
 
-from model.tgn.temporal_attention import TemporalAttentionLayer
+from model.dcrec.tgn.temporal_attention import TemporalAttentionLayer
 
 
 class EmbeddingModule(nn.Module):

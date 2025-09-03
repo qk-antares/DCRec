@@ -54,8 +54,6 @@ def parse_arguments():
     parser.add_argument('--model', type=str, default='tgn', choices=['tgn', 'dcrec'], help='Model type: tgn or dcrec (dual-channel recommendation)')
     parser.add_argument('--cgfa_in_channels', type=int, default=None, help='CGFA input channels (auto-detected if None)')
     parser.add_argument('--cgfa_out_channels', type=int, default=128, help='CGFA output channels')
-    parser.add_argument('--cgfa_max_iter', type=int, default=10, help='CGFA maximum iterations')
-    parser.add_argument('--cgfa_tau', type=float, default=0.05, help='CGFA tau parameter for Sinkhorn algorithm')
     parser.add_argument('--fusion_hidden_dim', type=int, default=256, help='DCRec fusion network hidden dimension')
     parser.add_argument('--final_hidden_dim', type=int, default=128, help='DCRec final embedding dimension')
 
