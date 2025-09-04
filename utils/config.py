@@ -25,8 +25,6 @@ def parse_arguments():
     parser.add_argument('--n_skip_val', type=int, default=30, help='Number of epochs to skip validation (model warm-up period)')
     parser.add_argument('--drop_out', type=float, default=0.1, help='Dropout probability')
     parser.add_argument('--gpu', type=int, default=0, help='Idx for the gpu to use')
-    parser.add_argument('--node_dim', type=int, default=128, help='Dimensions of the node embedding')
-    parser.add_argument('--time_dim', type=int, default=128, help='Dimensions of the time embedding')
     parser.add_argument('--seed', type=int, default=0, help='Random seed for reproducibility')
     
     # 噪声剪枝相关参数
@@ -43,12 +41,12 @@ def parse_arguments():
     parser.add_argument('--aggregator', type=str, default="last", help='Type of message aggregator')
     parser.add_argument('--memory_update_at_end', action='store_true', help='Whether to update memory at the end or at the start of the batch')
     parser.add_argument('--message_dim', type=int, default=100, help='Dimensions of the messages')
+    parser.add_argument('--time_dim', type=int, default=128, help='Dimensions of the time embedding')
+    parser.add_argument('--node_dim', type=int, default=128, help='Dimensions of the node embedding, must be the same as memory_dim if randomize_features=True')
     parser.add_argument('--memory_dim', type=int, default=129, help='Dimensions of the memory for each node, 129 for ml-1m')
     parser.add_argument('--use_destination_embedding_in_message', action='store_true', help='Whether to use the embedding of the destination node as part of the message')
     parser.add_argument('--use_source_embedding_in_message', action='store_true', help='Whether to use the embedding of the source node as part of the message')
     parser.add_argument('--dyrep', action='store_true', help='Whether to run the dyrep model')
-    parser.add_argument("--max_iter", type=int, default=10, help="Maximum iterations for Sinkhorn algorithm")
-    parser.add_argument("--tau", type=float, default=1., help="Regularization parameter; smaller tau approaches Hungarian solution")
     
     # DCRec模型相关参数
     parser.add_argument('--model', type=str, default='tgn', choices=['tgn', 'dcrec'], help='Model type: tgn or dcrec (dual-channel recommendation)')

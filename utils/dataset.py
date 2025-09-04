@@ -1,6 +1,7 @@
 import logging
 import numpy as np
 import pandas as pd
+import torch
 
 # 训练/验证/测试数据集类
 class Data:
@@ -19,7 +20,7 @@ class Data:
 
 # 整个数据集，包含多个Data对象，提供访问和处理数据的功能
 class Dataset:
-    def __init__(self, dataset_name, randomize_features=False, train_ratio=0.8, val_ratio=0.1, inductive=False, uniform=False):
+    def __init__(self, dataset_name, randomize_features=False, node_dim=128, train_ratio=0.8, val_ratio=0.1, inductive=False, uniform=False):
         """
         初始化数据集
         :param dataset_name: 数据集名称
@@ -36,10 +37,10 @@ class Dataset:
         self.graph_df = None
         self.node_features = None
         self.edge_features = None
-        self.node_cg_n = None
+        self.node_cg_mask = None
         self.node_cg_emb = None
         self.node_cg_A = None
-        self.read_data(dataset_name, randomize_features)
+        self.read_data(dataset_name, randomize_features, node_dim)
 
         self.full_data = None
         self.train_data = None
@@ -61,7 +62,7 @@ class Dataset:
         self.std_time_shift_dst = None
         self.compute_time_statistics(self.full_data.sources, self.full_data.destinations, self.full_data.timestamps)
 
-    def read_data(self, dataset_name, randomize_features):
+    def read_data(self, dataset_name, randomize_features, node_dim):
         self.logger.info(f"Reading dataset {dataset_name}...")
         # 读取图数据
         self.graph_df = pd.read_csv(f'data/{dataset_name}/processed/graph.csv')
@@ -69,13 +70,10 @@ class Dataset:
         self.node_features = np.load(f'data/{dataset_name}/processed/nodes.npy')
 
         # 初始化侧信息图数据
-        self.node_cg_n = None
-        self.node_cg_emb = None
-        self.node_cg_A = None
-        self._initialize_side_info_graphs()
+        self.initialize_side_info_graphs()
 
         if randomize_features:
-            self.node_features = np.random.rand(self.node_features.shape[0], self.node_features.shape[1])
+            self.node_features = np.random.rand(self.node_features.shape[0], node_dim)
 
     def split_data(self, train_ratio, val_ratio, inductive=False):
         self.logger.info(f"Splitting data into train, val, and test sets with ratios {train_ratio}, {val_ratio}...")
@@ -153,7 +151,7 @@ class Dataset:
         self.logger.info(f"The validation dataset has {self.val_data.n_interactions} interactions, involving {self.val_data.n_unique_nodes} different nodes ({self.val_data.n_unique_sources} unique sources and {self.val_data.n_unique_destinations} unique destinations)")
         self.logger.info(f"The test dataset has {self.test_data.n_interactions} interactions, involving {self.test_data.n_unique_nodes} different nodes ({self.test_data.n_unique_sources} unique sources and {self.test_data.n_unique_destinations} unique destinations)")
 
-    def _initialize_side_info_graphs(self):
+    def initialize_side_info_graphs(self):
         """
         初始化侧信息图数据结构
         为每个User/Item创建对应的图，其中节点代表侧信息特征
@@ -163,24 +161,25 @@ class Dataset:
         num_nodes = self.node_features.shape[0]  # 总节点数（包括User和Item）
         feature_dim = self.node_features.shape[1]  # 特征维度
         
-        # 初始化节点数数组
-        self.node_cg_n = np.zeros(num_nodes, dtype=np.int32)
-        
-        # 计算每个节点的特征数（非零特征数量）
+        # 计算每个节点的特征数（非零特征数量）和最大特征数
         max_features = 0
+        node_feature_counts = []
         for i in range(num_nodes):
             # 计算当前节点有多少个非零特征
             num_features = np.sum(self.node_features[i] > 0)
-            self.node_cg_n[i] = num_features
+            node_feature_counts.append(num_features)
             max_features = max(max_features, num_features)
         
         self.logger.info(f"Maximum number of features per node: {max_features}")
         
+        # 初始化mask矩阵 [num_nodes, max_features] - 用来表示有效的节点
+        self.node_cg_mask = torch.zeros((num_nodes, max_features), dtype=torch.bool)
+        
         # 初始化节点嵌入矩阵 [num_nodes, max_features, feature_dim]
-        self.node_cg_emb = np.zeros((num_nodes, max_features, feature_dim), dtype=np.float32)
+        self.node_cg_emb = torch.zeros((num_nodes, max_features, feature_dim), dtype=torch.float32)
         
         # 初始化邻接矩阵 [num_nodes, max_features, max_features]
-        self.node_cg_A = np.zeros((num_nodes, max_features, max_features), dtype=np.float32)
+        self.node_cg_A = torch.zeros((num_nodes, max_features, max_features), dtype=torch.float32)
         
         # 为每个节点构建对应的图
         for i in range(num_nodes):
@@ -193,10 +192,13 @@ class Dataset:
                 # 如果没有特征，跳过
                 continue
             
+            # 设置mask - 前num_features个位置为True
+            self.node_cg_mask[i, :num_features] = True
+            
             # 为每个特征创建独热编码
             for j, feature_idx in enumerate(feature_indices):
                 # 创建独热向量
-                one_hot = np.zeros(feature_dim, dtype=np.float32)
+                one_hot = torch.zeros(feature_dim, dtype=torch.float32)
                 one_hot[feature_idx] = 1.0
                 self.node_cg_emb[i, j] = one_hot
             
@@ -218,21 +220,24 @@ class Dataset:
         Returns:
             dict: 包含各种统计信息的字典
         """
+        # 计算每个节点的有效特征数
+        node_feature_counts = self.node_cg_mask.sum(dim=1).numpy()  # [num_nodes]
+        
         stats = {
-            'total_nodes': len(self.node_cg_n),
-            'nodes_with_features': np.sum(self.node_cg_n > 0),
-            'nodes_without_features': np.sum(self.node_cg_n == 0),
-            'avg_features_per_node': np.mean(self.node_cg_n),
-            'max_features_per_node': np.max(self.node_cg_n),
-            'min_features_per_node': np.min(self.node_cg_n),
-            'feature_distribution': np.bincount(self.node_cg_n).tolist(),
-            'total_graph_nodes': np.sum(self.node_cg_n),
+            'total_nodes': len(node_feature_counts),
+            'nodes_with_features': int(np.sum(node_feature_counts > 0)),
+            'nodes_without_features': int(np.sum(node_feature_counts == 0)),
+            'avg_features_per_node': float(np.mean(node_feature_counts)),
+            'max_features_per_node': int(np.max(node_feature_counts)),
+            'min_features_per_node': int(np.min(node_feature_counts)),
+            'feature_distribution': np.bincount(node_feature_counts).tolist(),
+            'total_graph_nodes': int(np.sum(node_feature_counts)),
             'total_graph_edges': 0
         }
         
         # 计算总边数
-        for i in range(len(self.node_cg_n)):
-            num_features = self.node_cg_n[i]
+        for i in range(len(node_feature_counts)):
+            num_features = node_feature_counts[i]
             if num_features > 1:
                 stats['total_graph_edges'] += num_features * (num_features - 1)
         

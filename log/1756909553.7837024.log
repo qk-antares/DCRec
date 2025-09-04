@@ -1,0 +1,139 @@
+2025-09-03 22:25:53,783 - root - INFO - Namespace(aggregator='last', batch_size=256, cgfa_in_channels=None, cgfa_out_channels=128, data='ml-1m', drop_out=0.1, dyrep=False, embedding_module='graph_attention', final_hidden_dim=128, fusion_hidden_dim=256, gpu=0, inductive=False, l2_regularization=0.0, lr=0.0001, max_iter=10, memory_dim=129, memory_update_at_end=False, memory_updater='gru', message_dim=100, message_function='identity', model='tgn', n_epoch=50, n_heads=2, n_layers=1, n_neg=10, n_neighbors=10, n_skip_val=30, n_test_neg=1000, node_dim=128, noise_pruning_ratio=0.0, patience=5, prefix='tgn', randomize_features=False, seed=0, tau=1.0, time_dim=128, train_ratio=0.8, uniform=False, use_destination_embedding_in_message=False, use_memory=True, use_source_embedding_in_message=False, valid_ratio=0.1)
+2025-09-03 22:25:53,784 - utils.dataset - INFO - Reading dataset ml-1m...
+2025-09-03 22:25:53,886 - utils.dataset - INFO - Initializing side information graphs...
+2025-09-03 22:25:53,925 - utils.dataset - INFO - Maximum number of features per node: 7
+2025-09-03 22:25:54,485 - utils.dataset - INFO - Splitting data into train, val, and test sets with ratios 0.8, 0.1...
+2025-09-03 22:25:54,725 - utils.dataset - INFO - The dataset has 575281 interactions, involving 9571 different nodes (6038 unique sources and 3533 unique destinations)
+2025-09-03 22:25:54,726 - utils.dataset - INFO - The training dataset has 460226 interactions, involving 8846 different nodes (5378 unique sources and 3468 unique destinations)
+2025-09-03 22:25:54,726 - utils.dataset - INFO - The validation dataset has 57527 interactions, involving 3982 different nodes (1088 unique sources and 2894 unique destinations)
+2025-09-03 22:25:54,726 - utils.dataset - INFO - The test dataset has 57528 interactions, involving 4252 different nodes (1220 unique sources and 3032 unique destinations)
+2025-09-03 22:25:56,390 - root - INFO - Using device: cpu
+2025-09-03 22:25:56,391 - trainer - INFO - Initializing TGN trainer
+2025-09-03 22:25:56,391 - trainer - INFO - Initializing TGN trainer
+2025-09-03 22:25:56,780 - trainer - INFO - num of training instances: 460226
+2025-09-03 22:25:56,781 - trainer - INFO - num of batches per epoch: 1798
+2025-09-03 22:25:56,781 - trainer - INFO - Skipping validation for first 30 epochs (warm-up period)
+2025-09-03 22:25:56,781 - trainer - INFO - Using noise pruning with ratio: 0.0
+2025-09-03 22:25:56,781 - trainer - INFO - Using L2 regularization with coefficient: 0.0
+2025-09-03 22:48:03,072 - trainer - INFO - epoch: 1 took 1326.29s
+2025-09-03 22:48:03,074 - trainer - INFO - Epoch losses - Total: 0.3470, BPR: 0.3470, L2: 0.000000
+2025-09-03 22:48:03,075 - trainer - INFO - Validation skipped (warm-up period)
+2025-09-03 23:20:10,583 - trainer - INFO - epoch: 2 took 1927.51s
+2025-09-03 23:20:10,583 - trainer - INFO - Epoch losses - Total: 0.3037, BPR: 0.3037, L2: 0.000000
+2025-09-03 23:20:10,583 - trainer - INFO - Validation skipped (warm-up period)
+2025-09-03 23:38:51,777 - trainer - INFO - epoch: 3 took 1121.19s
+2025-09-03 23:38:51,777 - trainer - INFO - Epoch losses - Total: 0.2580, BPR: 0.2580, L2: 0.000000
+2025-09-03 23:38:51,777 - trainer - INFO - Validation skipped (warm-up period)
+2025-09-03 23:57:28,909 - trainer - INFO - epoch: 4 took 1117.13s
+2025-09-03 23:57:28,909 - trainer - INFO - Epoch losses - Total: 0.2403, BPR: 0.2403, L2: 0.000000
+2025-09-03 23:57:28,909 - trainer - INFO - Validation skipped (warm-up period)
+2025-09-04 00:16:11,774 - trainer - INFO - epoch: 5 took 1122.86s
+2025-09-04 00:16:11,775 - trainer - INFO - Epoch losses - Total: 0.2294, BPR: 0.2294, L2: 0.000000
+2025-09-04 00:16:11,776 - trainer - INFO - Validation skipped (warm-up period)
+2025-09-04 00:34:54,858 - trainer - INFO - epoch: 6 took 1123.08s
+2025-09-04 00:34:54,858 - trainer - INFO - Epoch losses - Total: 0.2191, BPR: 0.2191, L2: 0.000000
+2025-09-04 00:34:54,858 - trainer - INFO - Validation skipped (warm-up period)
+2025-09-04 00:53:32,206 - trainer - INFO - epoch: 7 took 1117.35s
+2025-09-04 00:53:32,206 - trainer - INFO - Epoch losses - Total: 0.2094, BPR: 0.2094, L2: 0.000000
+2025-09-04 00:53:32,206 - trainer - INFO - Validation skipped (warm-up period)
+2025-09-04 01:12:13,998 - trainer - INFO - epoch: 8 took 1121.79s
+2025-09-04 01:12:13,999 - trainer - INFO - Epoch losses - Total: 0.1993, BPR: 0.1993, L2: 0.000000
+2025-09-04 01:12:13,999 - trainer - INFO - Validation skipped (warm-up period)
+2025-09-04 01:31:01,166 - trainer - INFO - epoch: 9 took 1127.17s
+2025-09-04 01:31:01,166 - trainer - INFO - Epoch losses - Total: 0.1930, BPR: 0.1930, L2: 0.000000
+2025-09-04 01:31:01,166 - trainer - INFO - Validation skipped (warm-up period)
+2025-09-04 01:49:50,574 - trainer - INFO - epoch: 10 took 1129.41s
+2025-09-04 01:49:50,574 - trainer - INFO - Epoch losses - Total: 0.1877, BPR: 0.1877, L2: 0.000000
+2025-09-04 01:49:50,574 - trainer - INFO - Validation skipped (warm-up period)
+2025-09-04 02:08:39,353 - trainer - INFO - epoch: 11 took 1128.78s
+2025-09-04 02:08:39,353 - trainer - INFO - Epoch losses - Total: 0.1844, BPR: 0.1844, L2: 0.000000
+2025-09-04 02:08:39,353 - trainer - INFO - Validation skipped (warm-up period)
+2025-09-04 02:27:26,647 - trainer - INFO - epoch: 12 took 1127.29s
+2025-09-04 02:27:26,647 - trainer - INFO - Epoch losses - Total: 0.1801, BPR: 0.1801, L2: 0.000000
+2025-09-04 02:27:26,647 - trainer - INFO - Validation skipped (warm-up period)
+2025-09-04 02:46:12,643 - trainer - INFO - epoch: 13 took 1126.00s
+2025-09-04 02:46:12,643 - trainer - INFO - Epoch losses - Total: 0.1770, BPR: 0.1770, L2: 0.000000
+2025-09-04 02:46:12,643 - trainer - INFO - Validation skipped (warm-up period)
+2025-09-04 03:04:56,047 - trainer - INFO - epoch: 14 took 1123.40s
+2025-09-04 03:04:56,047 - trainer - INFO - Epoch losses - Total: 0.1738, BPR: 0.1738, L2: 0.000000
+2025-09-04 03:04:56,048 - trainer - INFO - Validation skipped (warm-up period)
+2025-09-04 03:23:41,962 - trainer - INFO - epoch: 15 took 1125.91s
+2025-09-04 03:23:41,962 - trainer - INFO - Epoch losses - Total: 0.1720, BPR: 0.1720, L2: 0.000000
+2025-09-04 03:23:41,962 - trainer - INFO - Validation skipped (warm-up period)
+2025-09-04 03:42:26,689 - trainer - INFO - epoch: 16 took 1124.73s
+2025-09-04 03:42:26,689 - trainer - INFO - Epoch losses - Total: 0.1704, BPR: 0.1704, L2: 0.000000
+2025-09-04 03:42:26,689 - trainer - INFO - Validation skipped (warm-up period)
+2025-09-04 04:01:14,321 - trainer - INFO - epoch: 17 took 1127.63s
+2025-09-04 04:01:14,322 - trainer - INFO - Epoch losses - Total: 0.1679, BPR: 0.1679, L2: 0.000000
+2025-09-04 04:01:14,323 - trainer - INFO - Validation skipped (warm-up period)
+2025-09-04 04:19:58,575 - trainer - INFO - epoch: 18 took 1124.25s
+2025-09-04 04:19:58,575 - trainer - INFO - Epoch losses - Total: 0.1656, BPR: 0.1656, L2: 0.000000
+2025-09-04 04:19:58,575 - trainer - INFO - Validation skipped (warm-up period)
+2025-09-04 04:38:47,650 - trainer - INFO - epoch: 19 took 1129.08s
+2025-09-04 04:38:47,650 - trainer - INFO - Epoch losses - Total: 0.1639, BPR: 0.1639, L2: 0.000000
+2025-09-04 04:38:47,650 - trainer - INFO - Validation skipped (warm-up period)
+2025-09-04 04:57:33,494 - trainer - INFO - epoch: 20 took 1125.84s
+2025-09-04 04:57:33,494 - trainer - INFO - Epoch losses - Total: 0.1627, BPR: 0.1627, L2: 0.000000
+2025-09-04 04:57:33,494 - trainer - INFO - Validation skipped (warm-up period)
+2025-09-04 05:16:15,948 - trainer - INFO - epoch: 21 took 1122.45s
+2025-09-04 05:16:15,948 - trainer - INFO - Epoch losses - Total: 0.1606, BPR: 0.1606, L2: 0.000000
+2025-09-04 05:16:15,948 - trainer - INFO - Validation skipped (warm-up period)
+2025-09-04 05:35:01,756 - trainer - INFO - epoch: 22 took 1125.81s
+2025-09-04 05:35:01,756 - trainer - INFO - Epoch losses - Total: 0.1593, BPR: 0.1593, L2: 0.000000
+2025-09-04 05:35:01,756 - trainer - INFO - Validation skipped (warm-up period)
+2025-09-04 05:53:47,971 - trainer - INFO - epoch: 23 took 1126.22s
+2025-09-04 05:53:47,971 - trainer - INFO - Epoch losses - Total: 0.1585, BPR: 0.1585, L2: 0.000000
+2025-09-04 05:53:47,971 - trainer - INFO - Validation skipped (warm-up period)
+2025-09-04 06:12:31,967 - trainer - INFO - epoch: 24 took 1124.00s
+2025-09-04 06:12:31,967 - trainer - INFO - Epoch losses - Total: 0.1567, BPR: 0.1567, L2: 0.000000
+2025-09-04 06:12:31,967 - trainer - INFO - Validation skipped (warm-up period)
+2025-09-04 06:31:17,770 - trainer - INFO - epoch: 25 took 1125.80s
+2025-09-04 06:31:17,770 - trainer - INFO - Epoch losses - Total: 0.1554, BPR: 0.1554, L2: 0.000000
+2025-09-04 06:31:17,770 - trainer - INFO - Validation skipped (warm-up period)
+2025-09-04 06:50:04,197 - trainer - INFO - epoch: 26 took 1126.43s
+2025-09-04 06:50:04,198 - trainer - INFO - Epoch losses - Total: 0.1545, BPR: 0.1545, L2: 0.000000
+2025-09-04 06:50:04,198 - trainer - INFO - Validation skipped (warm-up period)
+2025-09-04 07:08:52,124 - trainer - INFO - epoch: 27 took 1127.93s
+2025-09-04 07:08:52,124 - trainer - INFO - Epoch losses - Total: 0.1535, BPR: 0.1535, L2: 0.000000
+2025-09-04 07:08:52,124 - trainer - INFO - Validation skipped (warm-up period)
+2025-09-04 07:27:40,783 - trainer - INFO - epoch: 28 took 1128.66s
+2025-09-04 07:27:40,783 - trainer - INFO - Epoch losses - Total: 0.1526, BPR: 0.1526, L2: 0.000000
+2025-09-04 07:27:40,783 - trainer - INFO - Validation skipped (warm-up period)
+2025-09-04 07:46:30,027 - trainer - INFO - epoch: 29 took 1129.24s
+2025-09-04 07:46:30,027 - trainer - INFO - Epoch losses - Total: 0.1509, BPR: 0.1509, L2: 0.000000
+2025-09-04 07:46:30,027 - trainer - INFO - Validation skipped (warm-up period)
+2025-09-04 08:05:19,134 - trainer - INFO - epoch: 30 took 1129.11s
+2025-09-04 08:05:19,134 - trainer - INFO - Epoch losses - Total: 0.1502, BPR: 0.1502, L2: 0.000000
+2025-09-04 08:05:19,135 - trainer - INFO - Validation skipped (warm-up period)
+2025-09-04 08:24:03,694 - trainer - INFO - epoch: 31 took 1124.56s
+2025-09-04 08:24:03,695 - trainer - INFO - Epoch losses - Total: 0.1495, BPR: 0.1495, L2: 0.000000
+2025-09-04 08:24:03,695 - trainer - INFO - Starting validation from epoch 31
+2025-09-04 09:25:50,386 - trainer - INFO - val MRR: 0.1440, Recall@10: 0.3301, Recall@20: 0.4809
+2025-09-04 09:25:50,395 - trainer - INFO - New best validation MRR: 0.1440 at epoch 31, model saved
+2025-09-04 09:48:13,247 - trainer - INFO - epoch: 32 took 1342.85s
+2025-09-04 09:48:13,247 - trainer - INFO - Epoch losses - Total: 0.1492, BPR: 0.1492, L2: 0.000000
+2025-09-04 10:50:55,074 - trainer - INFO - val MRR: 0.1461, Recall@10: 0.3338, Recall@20: 0.4811
+2025-09-04 10:50:55,091 - trainer - INFO - New best validation MRR: 0.1461 at epoch 32, model saved
+2025-09-04 11:13:32,370 - trainer - INFO - epoch: 33 took 1357.28s
+2025-09-04 11:13:32,370 - trainer - INFO - Epoch losses - Total: 0.1481, BPR: 0.1481, L2: 0.000000
+2025-09-04 12:17:54,995 - trainer - INFO - val MRR: 0.1474, Recall@10: 0.3358, Recall@20: 0.4854
+2025-09-04 12:17:55,036 - trainer - INFO - New best validation MRR: 0.1474 at epoch 33, model saved
+2025-09-04 13:05:57,903 - trainer - INFO - epoch: 34 took 2882.87s
+2025-09-04 13:05:57,903 - trainer - INFO - Epoch losses - Total: 0.1475, BPR: 0.1475, L2: 0.000000
+2025-09-04 14:10:01,453 - trainer - INFO - val MRR: 0.1468, Recall@10: 0.3338, Recall@20: 0.4864
+2025-09-04 14:30:32,362 - trainer - INFO - epoch: 35 took 1230.91s
+2025-09-04 14:30:32,362 - trainer - INFO - Epoch losses - Total: 0.1467, BPR: 0.1467, L2: 0.000000
+2025-09-04 15:36:04,344 - trainer - INFO - val MRR: 0.1494, Recall@10: 0.3387, Recall@20: 0.4906
+2025-09-04 15:36:04,360 - trainer - INFO - New best validation MRR: 0.1494 at epoch 35, model saved
+2025-09-04 15:56:28,282 - trainer - INFO - epoch: 36 took 1223.92s
+2025-09-04 15:56:28,282 - trainer - INFO - Epoch losses - Total: 0.1472, BPR: 0.1472, L2: 0.000000
+2025-09-04 17:00:32,721 - trainer - INFO - val MRR: 0.1478, Recall@10: 0.3354, Recall@20: 0.4833
+2025-09-04 17:21:05,697 - trainer - INFO - epoch: 37 took 1232.98s
+2025-09-04 17:21:05,697 - trainer - INFO - Epoch losses - Total: 0.1468, BPR: 0.1468, L2: 0.000000
+2025-09-04 18:25:20,110 - trainer - INFO - val MRR: 0.1485, Recall@10: 0.3378, Recall@20: 0.4892
+2025-09-04 18:45:45,578 - trainer - INFO - epoch: 38 took 1225.47s
+2025-09-04 18:45:45,578 - trainer - INFO - Epoch losses - Total: 0.1455, BPR: 0.1455, L2: 0.000000
+2025-09-04 19:50:08,300 - trainer - INFO - val MRR: 0.1460, Recall@10: 0.3345, Recall@20: 0.4871
+2025-09-04 20:10:28,034 - trainer - INFO - epoch: 39 took 1219.73s
+2025-09-04 20:10:28,035 - trainer - INFO - Epoch losses - Total: 0.1450, BPR: 0.1450, L2: 0.000000
+2025-09-04 21:27:59,895 - trainer - INFO - val MRR: 0.1489, Recall@10: 0.3414, Recall@20: 0.4952

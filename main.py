@@ -40,7 +40,7 @@ def main():
     logger = setup_logger(args)
     
     # 加载数据集
-    dataset = Dataset(args.data, args.randomize_features, args.train_ratio, args.valid_ratio, args.inductive, args.uniform)
+    dataset = Dataset(args.data, args.randomize_features, args.node_dim, args.train_ratio, args.valid_ratio, args.inductive, args.uniform)
 
     # 设置设备
     device = torch.device(f'cuda:{args.gpu}' if torch.cuda.is_available() else 'cpu')

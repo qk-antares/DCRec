@@ -26,14 +26,11 @@ class DCRec(torch.nn.Module):
                  # CGFA相关参数
                  cgfa_in_channels=None, cgfa_out_channels=128, 
                  # 融合网络参数
-                 fusion_hidden_dim=256, final_hidden_dim=128,
-                 # TODO: 数据集，后面要去掉
-                 dataset=None):
+                 fusion_hidden_dim=256, final_hidden_dim=128):
         super(DCRec, self).__init__()
         
         self.logger = logging.getLogger(__name__)
 
-        self.dataset = dataset
 
         self.device = device
         
@@ -102,9 +99,9 @@ class DCRec(torch.nn.Module):
         self.tgn.memory.detach_memory()
 
     def compute_edge_scores(self, source_nodes, destination_nodes, negative_nodes, 
-                            source_counts, source_embs, source_adjs,
-                            dest_counts, dest_embs, dest_adjs,
-                            neg_counts, neg_embs, neg_adjs,
+                            source_masks, source_embs, source_adjs,
+                            dest_masks, dest_embs, dest_adjs,
+                            neg_masks, neg_embs, neg_adjs,
                             edge_times, edge_idxs, n_neighbors=20):
         """
         Compute raw scores (logits) for edges between sources and destination and between sources and
@@ -117,7 +114,7 @@ class DCRec(torch.nn.Module):
         layer
         :return: Raw scores for both the positive and negative edges
         """
-        n_samples = len(source_nodes)
+        batch_size, n, ft_dim = source_embs.shape
         n_neg = negative_nodes.shape[0]
 
         # 1. get source_embedding1 and target_embeddings1 by tgn
@@ -132,32 +129,13 @@ class DCRec(torch.nn.Module):
         target_embeddings1 = torch.cat([destination_node_embedding1, negative_node_embedding_flat], dim=0)
 
         # 2. get source_embedding2 and target_embeddings2 by cgfa
-        source_adjs = torch.FloatTensor(source_adjs).to(self.device)
-        source_embs = torch.FloatTensor(source_embs).to(self.device)
-        source_counts = torch.LongTensor(source_counts).to(self.device)
-
-
-        dest_embs = torch.FloatTensor(dest_embs).to(self.device)
-        dest_adjs = torch.FloatTensor(dest_adjs).to(self.device)
-        
-        dest_counts = torch.LongTensor(dest_counts).to(self.device)
-        
-        # 通过CGFA获取图级别表示
-        source_graph_emb, dest_graph_emb = self.cgfa(
-
-        )
-        
-
-
         source_embedding2, target_embeddings2 = self.cgfa.compute_cgfa_embeddings(
-            A_src=source_adjs,
-            emb_src=source_embs,
-            n_nodes_src=source_counts,
-            A_dst=dest_adjs,
-            emb_dst=dest_embs,
-            n_nodes_dst=dest_counts
-
-            np.repeat(source_nodes, repeats=(1 + n_neg), axis=0), np.concatenate([destination_nodes, negative_nodes.reshape(-1)], axis=0)
+            A_src=source_adjs.repeat(1 + n_neg, 1, 1),
+            emb_src=source_embs.repeat(1 + n_neg, 1, 1),
+            mask_src=source_masks.repeat(1 + n_neg, 1),
+            A_dst=torch.cat([dest_adjs, neg_adjs.reshape(batch_size * n_neg, n, n)], dim=0),
+            emb_dst=torch.cat([dest_embs, neg_embs.reshape(batch_size * n_neg, n, ft_dim)], dim=0),
+            mask_dst=torch.cat([dest_masks, neg_masks.reshape(batch_size * n_neg, n)], dim=0),
         )
 
         # 3. get score
@@ -167,9 +145,9 @@ class DCRec(torch.nn.Module):
 
         # 最终预测
         score = self.affinity_score(source_fused, target_fused).squeeze(dim=-1)
-        pos_score = score[:n_samples]
-        neg_score = score[n_samples:]
+        pos_score = score[:batch_size]
+        neg_score = score[batch_size:]
         
-        neg_score = neg_score.view(n_neg, n_samples)
+        neg_score = neg_score.view(n_neg, batch_size)
 
         return pos_score, neg_score
