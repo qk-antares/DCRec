@@ -1,0 +1,30 @@
+2025-09-05 09:20:27,956 - root - INFO - Namespace(aggregator='last', batch_size=256, cgfa_in_channels=None, cgfa_out_channels=128, data='ml-1m', drop_out=0.1, dyrep=False, embedding_module='graph_attention', final_hidden_dim=128, fusion_hidden_dim=256, gpu=0, inductive=False, l2_regularization=0.0001, lr=0.0001, memory_dim=129, memory_update_at_end=False, memory_updater='gru', message_dim=100, message_function='identity', model='tgn', n_epoch=3, n_heads=2, n_layers=1, n_neg=10, n_neighbors=10, n_skip_val=0, n_test_neg=1000, node_dim=128, noise_pruning_ratio=0.0, patience=5, prefix='test-dcrec-l2-0.0001', randomize_features=False, seed=0, time_dim=128, train_ratio=0.05, uniform=False, use_destination_embedding_in_message=False, use_memory=True, use_source_embedding_in_message=False, valid_ratio=0.01)
+2025-09-05 09:20:27,956 - utils.dataset - INFO - Reading dataset ml-1m...
+2025-09-05 09:20:28,058 - utils.dataset - INFO - Initializing side information graphs...
+2025-09-05 09:20:28,114 - utils.dataset - INFO - Maximum number of features per node: 7
+2025-09-05 09:20:28,890 - utils.dataset - INFO - Splitting data into train, val, and test sets with ratios 0.05, 0.01...
+2025-09-05 09:20:29,213 - utils.dataset - INFO - The dataset has 575281 interactions, involving 9571 different nodes (6038 unique sources and 3533 unique destinations)
+2025-09-05 09:20:29,213 - utils.dataset - INFO - The training dataset has 28765 interactions, involving 2690 different nodes (367 unique sources and 2323 unique destinations)
+2025-09-05 09:20:29,213 - utils.dataset - INFO - The validation dataset has 5752 interactions, involving 1536 different nodes (91 unique sources and 1445 unique destinations)
+2025-09-05 09:20:29,213 - utils.dataset - INFO - The test dataset has 540764 interactions, involving 9261 different nodes (5735 unique sources and 3526 unique destinations)
+2025-09-05 09:20:30,786 - root - INFO - Using device: cpu
+2025-09-05 09:20:30,786 - trainer - INFO - Initializing TGN trainer
+2025-09-05 09:20:30,786 - trainer - INFO - Initializing DCRec trainer
+2025-09-05 09:20:31,273 - trainer - INFO - num of training instances: 28765
+2025-09-05 09:20:31,274 - trainer - INFO - num of batches per epoch: 113
+2025-09-05 09:20:31,274 - trainer - INFO - Skipping validation for first 0 epochs (warm-up period)
+2025-09-05 09:20:31,274 - trainer - INFO - Using noise pruning with ratio: 0.0
+2025-09-05 09:20:31,274 - trainer - INFO - Using L2 regularization with coefficient: 0.0001
+2025-09-05 09:21:34,519 - trainer - INFO - epoch: 1 took 63.24s
+2025-09-05 09:21:34,519 - trainer - INFO - Epoch losses - Total: 0.9030, BPR: 0.5588, L2: 0.344227
+2025-09-05 09:21:34,519 - trainer - INFO - Starting validation from epoch 1
+2025-09-05 09:29:36,140 - trainer - INFO - val MRR: 0.0423, Recall@10: 0.0789, Recall@20: 0.1326
+2025-09-05 09:29:36,167 - trainer - INFO - New best validation MRR: 0.0423 at epoch 1, model saved
+2025-09-05 09:30:40,745 - trainer - INFO - epoch: 2 took 64.58s
+2025-09-05 09:30:40,745 - trainer - INFO - Epoch losses - Total: 0.8053, BPR: 0.4858, L2: 0.319566
+2025-09-05 09:38:33,964 - trainer - INFO - val MRR: 0.0517, Recall@10: 0.0965, Recall@20: 0.1683
+2025-09-05 09:38:33,979 - trainer - INFO - New best validation MRR: 0.0517 at epoch 2, model saved
+2025-09-05 09:39:35,591 - trainer - INFO - epoch: 3 took 61.61s
+2025-09-05 09:39:35,591 - trainer - INFO - Epoch losses - Total: 0.7677, BPR: 0.4688, L2: 0.298897
+2025-09-05 09:47:12,516 - trainer - INFO - val MRR: 0.0532, Recall@10: 0.1106, Recall@20: 0.1881
+2025-09-05 09:47:12,534 - trainer - INFO - New best validation MRR: 0.0532 at epoch 3, model saved

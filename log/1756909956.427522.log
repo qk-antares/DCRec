@@ -137,3 +137,33 @@
 2025-09-04 20:13:43,588 - trainer - INFO - epoch: 39 took 1174.10s
 2025-09-04 20:13:43,588 - trainer - INFO - Epoch losses - Total: 0.0884, BPR: 0.0884, L2: 0.000000
 2025-09-04 21:32:34,144 - trainer - INFO - val MRR: 0.1336, Recall@10: 0.3051, Recall@20: 0.4545
+2025-09-04 22:04:22,911 - trainer - INFO - epoch: 40 took 1908.77s
+2025-09-04 22:04:22,911 - trainer - INFO - Epoch losses - Total: 0.0882, BPR: 0.0882, L2: 0.000000
+2025-09-04 23:23:20,961 - trainer - INFO - val MRR: 0.1363, Recall@10: 0.3116, Recall@20: 0.4623
+2025-09-04 23:23:20,984 - trainer - INFO - New best validation MRR: 0.1363 at epoch 40, model saved
+2025-09-04 23:49:58,536 - trainer - INFO - epoch: 41 took 1597.55s
+2025-09-04 23:49:58,536 - trainer - INFO - Epoch losses - Total: 0.0873, BPR: 0.0873, L2: 0.000000
+2025-09-05 00:37:03,753 - trainer - INFO - val MRR: 0.1362, Recall@10: 0.3128, Recall@20: 0.4631
+2025-09-05 00:50:30,577 - trainer - INFO - epoch: 42 took 806.82s
+2025-09-05 00:50:30,577 - trainer - INFO - Epoch losses - Total: 0.0867, BPR: 0.0867, L2: 0.000000
+2025-09-05 01:25:56,228 - trainer - INFO - val MRR: 0.1389, Recall@10: 0.3149, Recall@20: 0.4664
+2025-09-05 01:25:56,241 - trainer - INFO - New best validation MRR: 0.1389 at epoch 42, model saved
+2025-09-05 01:39:19,559 - trainer - INFO - epoch: 43 took 803.32s
+2025-09-05 01:39:19,559 - trainer - INFO - Epoch losses - Total: 0.0862, BPR: 0.0862, L2: 0.000000
+2025-09-05 02:14:40,006 - trainer - INFO - val MRR: 0.1371, Recall@10: 0.3135, Recall@20: 0.4661
+2025-09-05 02:28:05,636 - trainer - INFO - epoch: 44 took 805.63s
+2025-09-05 02:28:05,636 - trainer - INFO - Epoch losses - Total: 0.0855, BPR: 0.0855, L2: 0.000000
+2025-09-05 03:03:23,790 - trainer - INFO - val MRR: 0.1381, Recall@10: 0.3142, Recall@20: 0.4667
+2025-09-05 03:16:48,695 - trainer - INFO - epoch: 45 took 804.91s
+2025-09-05 03:16:48,695 - trainer - INFO - Epoch losses - Total: 0.0855, BPR: 0.0855, L2: 0.000000
+2025-09-05 03:52:05,588 - trainer - INFO - val MRR: 0.1380, Recall@10: 0.3141, Recall@20: 0.4638
+2025-09-05 04:05:33,476 - trainer - INFO - epoch: 46 took 807.89s
+2025-09-05 04:05:33,476 - trainer - INFO - Epoch losses - Total: 0.0855, BPR: 0.0855, L2: 0.000000
+2025-09-05 04:40:58,943 - trainer - INFO - val MRR: 0.1361, Recall@10: 0.3120, Recall@20: 0.4624
+2025-09-05 04:54:24,848 - trainer - INFO - epoch: 47 took 805.90s
+2025-09-05 04:54:24,848 - trainer - INFO - Epoch losses - Total: 0.0844, BPR: 0.0844, L2: 0.000000
+2025-09-05 05:29:43,935 - trainer - INFO - val MRR: 0.1388, Recall@10: 0.3165, Recall@20: 0.4668
+2025-09-05 05:29:43,935 - trainer - INFO - No improvement over 5 epochs, stop training
+2025-09-05 05:29:43,935 - trainer - INFO - Best model was at epoch 42 with MRR: 0.1389
+2025-09-05 06:05:03,437 - trainer - INFO - Test statistics: MRR: 0.1049, Recall@10: 0.2376, Recall@20: 0.3622
+2025-09-05 06:05:03,437 - trainer - INFO - Model training completed
