@@ -1,0 +1,29 @@
+2025-09-07 13:08:50,551 - root - INFO - Namespace(aggregator='last', batch_size=256, cgfa_in_channels=None, cgfa_out_channels=128, data='ml-100k', drop_out=0.1, dyrep=False, embedding_module='graph_attention', final_hidden_dim=128, fusion_hidden_dim=256, gpu=0, inductive=False, l2_regularization=0.0, lr=0.0001, memory_dim=173, memory_update_at_end=False, memory_updater='gru', message_dim=100, message_function='identity', model='tgn', n_epoch=3, n_heads=2, n_layers=1, n_neg=1, n_neighbors=10, n_skip_val=0, n_test_neg=1000, node_dim=128, noise_pruning_ratio=0.0, patience=5, prefix='tgn-test', randomize_features=False, seed=0, time_dim=128, train_ratio=0.8, uniform=False, use_destination_embedding_in_message=False, use_memory=True, use_source_embedding_in_message=False, valid_ratio=0.1)
+2025-09-07 13:08:50,551 - utils.dataset - INFO - Reading dataset ml-100k...
+2025-09-07 13:08:50,566 - utils.dataset - INFO - Initializing side information graphs...
+2025-09-07 13:08:50,577 - utils.dataset - INFO - Maximum number of features per node: 7
+2025-09-07 13:08:50,972 - utils.dataset - INFO - Splitting data into train, val, and test sets with ratios 0.8, 0.1...
+2025-09-07 13:08:51,002 - utils.dataset - INFO - The dataset has 55375 interactions, involving 2389 different nodes (942 unique sources and 1447 unique destinations)
+2025-09-07 13:08:51,002 - utils.dataset - INFO - The training dataset has 44300 interactions, involving 2129 different nodes (753 unique sources and 1376 unique destinations)
+2025-09-07 13:08:51,002 - utils.dataset - INFO - The validation dataset has 5539 interactions, involving 1099 different nodes (176 unique sources and 923 unique destinations)
+2025-09-07 13:08:51,002 - utils.dataset - INFO - The test dataset has 5536 interactions, involving 1150 different nodes (153 unique sources and 997 unique destinations)
+2025-09-07 13:08:51,393 - root - INFO - Using device: cpu
+2025-09-07 13:08:51,394 - trainer - INFO - Initializing TGN trainer
+2025-09-07 13:08:51,394 - trainer - INFO - Initializing TGN trainer
+2025-09-07 13:08:51,875 - trainer - INFO - num of training instances: 44300
+2025-09-07 13:08:51,875 - trainer - INFO - num of batches per epoch: 174
+2025-09-07 13:08:51,875 - trainer - INFO - Skipping validation for first 0 epochs (warm-up period)
+2025-09-07 13:08:51,875 - trainer - INFO - Using noise pruning with ratio: 0.0
+2025-09-07 13:08:51,875 - trainer - INFO - Using L2 regularization with coefficient: 0.0
+2025-09-07 13:09:39,994 - trainer - INFO - epoch: 1 took 48.12s
+2025-09-07 13:09:39,995 - trainer - INFO - Epoch losses - Total: 0.4727, BPR: 0.4727, L2: 0.000000
+2025-09-07 13:09:39,995 - trainer - INFO - Starting validation from epoch 1
+2025-09-07 13:17:53,393 - trainer - INFO - val MRR: 0.0338, Recall@10: 0.0605, Recall@20: 0.1051
+2025-09-07 13:17:53,407 - trainer - INFO - New best validation MRR: 0.0338 at epoch 1, model saved
+2025-09-07 13:18:41,387 - trainer - INFO - epoch: 2 took 47.98s
+2025-09-07 13:18:41,387 - trainer - INFO - Epoch losses - Total: 0.4081, BPR: 0.4081, L2: 0.000000
+2025-09-07 13:26:53,369 - trainer - INFO - val MRR: 0.0357, Recall@10: 0.0672, Recall@20: 0.1237
+2025-09-07 13:26:53,394 - trainer - INFO - New best validation MRR: 0.0357 at epoch 2, model saved
+2025-09-07 13:27:40,492 - trainer - INFO - epoch: 3 took 47.10s
+2025-09-07 13:27:40,492 - trainer - INFO - Epoch losses - Total: 0.4025, BPR: 0.4025, L2: 0.000000
+2025-09-07 13:32:36,214 - trainer - INFO - val MRR: 0.0355, Recall@10: 0.0663, Recall@20: 0.1202

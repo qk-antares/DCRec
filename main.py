@@ -46,9 +46,14 @@ def main():
     device = torch.device(f'cuda:{args.gpu}' if torch.cuda.is_available() else 'cpu')
     logger.info(f'Using device: {device}')
     
-    # 运行实验    
-    trainer = DCRecTrainer(args, dataset, device)
-    
+    # 运行实验
+    if args.model in ['tgn', 'tgsrec']:
+        trainer = TGNTrainer(args, dataset, device)
+    elif args.model == 'dcrec':    
+        trainer = DCRecTrainer(args, dataset, device)
+    elif args.model == 'gmcf':
+        raise NotImplementedError("GMCF model is not implemented yet.")
+
     # 训练模型
     trainer.train_model()
 

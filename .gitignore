@@ -9,3 +9,4 @@ train_tgn_prune.log
 train_tgn.log
 
 train_dcrec.log
+train_tgsrec.log

@@ -7,6 +7,8 @@ from model.dcrec.cgfa.modules.affinity import Affinity
 from model.dcrec.cgfa.modules.graph_pooling import DenseGraphPooling
 from torch import Tensor, List
 
+from utils.utils import MergeLayer
+
 class CGFA(torch.nn.Module):
     """
     Cross Graph Feature Aggregation Module
@@ -25,6 +27,11 @@ class CGFA(torch.nn.Module):
         # 注意力图池化
         self.graph_pooling1 = DenseGraphPooling(node_dim=out_channels)
         self.graph_pooling2 = DenseGraphPooling(node_dim=out_channels)
+
+        # MLP to compute probability on an edge given two graph embeddings
+        self.affinity_score = MergeLayer(out_channels, out_channels,
+                                        out_channels,
+                                        1)
 
     def compute_cgfa_embeddings(self, A_src: Tensor, emb_src: Tensor, mask_src: Tensor, A_dst: Tensor, emb_dst: Tensor, mask_dst: Tensor) -> List[Tensor]:
         """
@@ -63,3 +70,28 @@ class CGFA(torch.nn.Module):
         global_emb2 = self.graph_pooling2(new_emb2, mask_dst)
 
         return global_emb1, global_emb2
+
+
+    def compute_edge_scores(self,  A_src: Tensor, emb_src: Tensor, mask_src: Tensor, 
+                            A_dst: Tensor, emb_dst: Tensor, mask_dst: Tensor,
+                            A_neg: Tensor, emb_neg: Tensor, mask_neg: Tensor):
+        batch_size, n, ft_dim = emb_src.shape
+        n_neg = A_neg.shape[0]
+
+        source_embedding, target_embedding = self.cgfa.compute_cgfa_embeddings(
+            A_src=A_src.repeat(1 + n_neg, 1, 1),
+            emb_src=emb_src.repeat(1 + n_neg, 1, 1),
+            mask_src=mask_src.repeat(1 + n_neg, 1),
+            A_dst=torch.cat([A_dst, A_neg.reshape(batch_size * n_neg, n, n)], dim=0),
+            emb_dst=torch.cat([emb_dst, emb_neg.reshape(batch_size * n_neg, n, ft_dim)], dim=0),
+            mask_dst=torch.cat([mask_dst, mask_neg.reshape(batch_size * n_neg, n)], dim=0),
+        )
+
+        score = self.affinity_score(source_embedding, target_embedding).squeeze(dim=-1)
+        pos_score = score[:batch_size]
+        neg_score = score[batch_size:]
+        
+        # Reshape neg_score from [n_neg * batch_size] to [n_neg, batch_size]
+        neg_score = neg_score.view(n_neg, batch_size)
+
+        return pos_score, neg_score

@@ -2,11 +2,13 @@
 export PYTHONPATH=$PYTHONPATH:~/workplace/python/DCRec/
 cd ~/workplace/python/DCRec/
 nohup python main.py \
-  --model dcrec \
   --data ml-100k \
-  --n_test_neg 100 \
-  --memory_dim 173 \
   --use_memory \
-  --prefix dcrec \
-  --n_neg 10 \
-  > train_dcrec.log 2>&1 &
+  --prefix tgn-test \
+  --n_neg 1 \
+  --n_epoch 3 \
+  --n_skip_val 0 \
+  --memory_dim 173 \
+  --n_test_neg 100 \
+  > test-tgn-ml-100k-neg1_100.log 2>&1 &
+

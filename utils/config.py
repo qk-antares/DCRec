@@ -5,8 +5,10 @@ def parse_arguments():
     """解析命令行参数"""
     parser = argparse.ArgumentParser('TGN self-supervised training')
     
+    parser.add_argument('--model', type=str, default='tgn', choices=['tgn', 'cgfa', 'dcrec', 'tgsrec', 'gmcf'], help='Model type')
+
     # 数据相关
-    parser.add_argument('-d', '--data', type=str, help='Dataset name (ml-1m or taobao)', default='ml-1m')
+    parser.add_argument('--data', type=str, help='Dataset name (ml-1m or taobao)', default='ml-1m')
     parser.add_argument('--batch_size', type=int, default=256, help='Batch_size')
     parser.add_argument('--n_epoch', type=int, default=50, help='Number of epochs')
     parser.add_argument('--train_ratio', type=float, default=0.8, help='Training set ratio')
@@ -49,7 +51,6 @@ def parse_arguments():
     parser.add_argument('--dyrep', action='store_true', help='Whether to run the dyrep model')
     
     # DCRec模型相关参数
-    parser.add_argument('--model', type=str, default='tgn', choices=['tgn', 'dcrec'], help='Model type: tgn or dcrec (dual-channel recommendation)')
     parser.add_argument('--cgfa_in_channels', type=int, default=None, help='CGFA input channels (auto-detected if None)')
     parser.add_argument('--cgfa_out_channels', type=int, default=128, help='CGFA output channels')
     parser.add_argument('--fusion_hidden_dim', type=int, default=256, help='DCRec fusion network hidden dimension')
